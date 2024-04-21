@@ -16,6 +16,7 @@ public:
         ultrasonics[3] = Ultrasonic(trig4, echo4);
     }
 
+
     int[] get_distances();
     {
         deltaTime = millis();
@@ -30,6 +31,7 @@ public:
     }
     return distances;
     }
+
     double getDeltaTime()
     {
         return millis() - deltaTime;
