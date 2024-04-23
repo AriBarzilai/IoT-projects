@@ -1,61 +1,110 @@
-#include "pitches.h"
+#include <Ultrasonic.h>
 
-#define TRIGGER_PIN  16
-#define ECHO_PIN     17
-#define MAX_DISTANCE 100
-#define TONE_OUTPUT_PIN 26
-#define EPSILON 15
+#define BUZZER_PIN 2 // Pin to connect the buzzer
+#define DELAY_TIME 300 // the number of milliseconds between the start of one sound and the next
+#define PLAY_TIME 250 // the number of milliseconds to play a sound
+#define TONE_PWM_CHANNEL 0 
+#define EPSILON 15 // a change in distance (cm) smaller than this is ignored
 
-// The ESP32 has 16 channels which can generate 16 independent waveforms
-// We'll just choose PWM channel 0 here
-const int TONE_PWM_CHANNEL = 0;
-
-int melody[] = {
-  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
-};
-
-int noteDurations[] = {
-  4, 8, 8, 4, 4, 4, 4, 4
-};
-
+Ultrasonic ultrasonics[] = {Ultrasonic(3, 4), Ultrasonic(5, 6), Ultrasonic(7, 8), Ultrasonic(9, 10)};
+int distances[4];                            
+int lastPlayedDist[4] = {-1000, -1000, -1000, -1000}; // the distance last used responsible for an update
+double prevTime = 0.0;                                  // the time in milliseconds previous loop() cycle ended 
+double deltaTime = 0.0;
+double delayCounter = 0;                              // the time until next playing a new note
+double playCounter = 0;                               // the time left until we stop playing the current note
+bool playSound = false;                               // if true, play a new sound
+bool SensorCauseSound = -1;                           // the sensor responsible for playing the current sound; the sensor with largest distance change
 
 void setup() {
-  Serial.begin(115200);
-  ledcAttachPin(TONE_OUTPUT_PIN, TONE_PWM_CHANNEL);
+  Serial.begin(9600);
+  pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as output
+  prevTime = millis();
 }
-int pauseBetweenNotes = 0;
-int distanceLastPlayed = -1000; // the cm value when the note was last played
+
+
 void loop() {
-  int distanceCurrent = ultrasonic_measure(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // the current distance detected, in cm
-  // to calculate the note duration, take one second divided by the note type.
-  //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-
-  int difference = distanceCurrent - distanceLastPlayed;
-  if (difference > EPSILON || difference < -1*EPSILON) { // we play a note if a large enough change is detected from the last time it was played
-    int thisNote = map(distanceCurrent, 1,100,0,7);
-    int noteDuration = 1000 / noteDurations[thisNote];
-    ledcWriteTone(TONE_PWM_CHANNEL, melody[thisNote]);
-    distanceLastPlayed = distanceCurrent;
-    delay(noteDuration);
-    ledcWrite(TONE_PWM_CHANNEL, 0);
-    // to distinguish the not/es, set a minimum time between them.
-    // the note's duration + 30% seems to work well:
-    int pauseBetweenNotes = noteDuration * 0.20;
-    delay(pauseBetweenNotes);
-  }
-  // stop the tone playing:
-  Serial.println(String(distanceCurrent) + "   " + String(distanceLastPlayed) + "   " + String(distanceCurrent - distanceLastPlayed));
-
+  update_distances();
+  double deltaTime = getDeltaTime();
+  update_sound(deltaTime, distances);
+  printLog(deltaTime);
+  prevTime = millis();
 }
 
-int ultrasonic_measure(int trigPin, int echoPin, int max_distance) {
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(trigPin, LOW);
-  int duration = pulseIn(echoPin, HIGH, max_distance * 59);
-  return duration / 59;
+void update_distances() {
+  bool hasUpdated = false;
+  int diff = 0;
+  int largestDiff = 0;
+  int largestSensor = -1;
+
+  for (int i = 0; i < 4; i++) {
+    distances[i] = ultrasonics[i].read() - 1; // scale down the distance by 1 to be in the range of 1-300
+    if (distances[i] > 300 || distances[i] <= 0) {
+      distances[i] = 0;
+    }
+
+    diff = abs(distances[i] - lastPlayedDist[i]);
+    if (distances[i] != 0 && diff > EPSILON) {
+      lastPlayedDist[i] = distances[i];
+      if (largestDiff <= diff) {
+        largestDiff = diff;
+        largestSensor = i;
+      }
+      hasUpdated = true;
+    }
+  }
+
+  if (hasUpdated && delayCounter <= 0) { 
+      delayCounter = DELAY_TIME;
+      playCounter = PLAY_TIME;
+      playSound = true;
+      SensorCauseSound = largestSensor;
+  }
+}
+
+double getDeltaTime() {
+  return millis() - prevTime;
+}
+
+void update_sound(double deltaTime, int* distances) {
+  if (playCounter <= 0) {
+    noTone(BUZZER_PIN);
+  } else {
+    playCounter -= deltaTime;
+  }
+  
+  if (playSound) {
+    playSound = false;
+    switch (SensorCauseSound) {
+      case 0:
+        tone(BUZZER_PIN, 65);
+        break;
+      case 1:
+        tone(BUZZER_PIN, 98);
+        break;
+      case 2:
+        tone(BUZZER_PIN, 523);
+        break;
+      case 3:
+        tone(BUZZER_PIN, 659);
+        break;
+    }
+  }
+
+  if (delayCounter > 0) {
+    delayCounter -= deltaTime;
+  }
+}
+
+void printLog(double deltaTime) {
+  Serial.print("dT: " + String(deltaTime));
+  Serial.print(" DCtr: " + String(delayCounter));
+  Serial.print(" PCtr: " + String(playCounter));
+  Serial.print(" (dist, LastDist): ");
+  for (int i = 0; i < 4; i++) {
+    Serial.print("(" + String(distances[i]) + "," + String(lastPlayedDist[i])+ ") ");
+  } 
+  Serial.print("isPlay: " + String(playCounter > 0));
+  Serial.print(" Sensor: " + String(SensorCauseSound));
+  Serial.println();
 }
