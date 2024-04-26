@@ -4,17 +4,18 @@
 #define DELAY_TIME 300 // the number of milliseconds between the start of one sound and the next
 #define PLAY_TIME 250 // the number of milliseconds to play a sound
 #define TONE_PWM_CHANNEL 0 
-#define EPSILON 15 // a change in distance (cm) smaller than this is ignored
+#define THRESHOLD 15 // a change in distance (cm) smaller than this is ignored
 
 Ultrasonic ultrasonics[] = {Ultrasonic(3, 4), Ultrasonic(5, 6), Ultrasonic(7, 8), Ultrasonic(9, 10)};
 int distances[4];                            
 int lastPlayedDist[4] = {-1000, -1000, -1000, -1000}; // the distance last used responsible for an update
-double prevTime = 0.0;                                  // the time in milliseconds previous loop() cycle ended 
+int diff[4] = {0, 0, 0, 0};                           // used for debugging purposes only; the difference between the previous update and the current
+double prevTime = 0.0;                                // the time in milliseconds previous loop() cycle ended 
 double deltaTime = 0.0;
 double delayCounter = 0;                              // the time until next playing a new note
 double playCounter = 0;                               // the time left until we stop playing the current note
 bool playSound = false;                               // if true, play a new sound
-bool SensorCauseSound = -1;                           // the sensor responsible for playing the current sound; the sensor with largest distance change
+int SensorCauseSound = -1;                           // the sensor responsible for playing the current sound; the sensor with largest distance change
 
 void setup() {
   Serial.begin(9600);
@@ -33,7 +34,6 @@ void loop() {
 
 void update_distances() {
   bool hasUpdated = false;
-  int diff = 0;
   int largestDiff = 0;
   int largestSensor = -1;
 
@@ -43,22 +43,10 @@ void update_distances() {
       distances[i] = 0;
     }
 
-    diff = abs(distances[i] - lastPlayedDist[i]);
-    if (distances[i] != 0 && diff > EPSILON) {
+    diff[i] = abs(distances[i] - lastPlayedDist[i]);
+    if (distances[i] != 0 && diff[i] > THRESHOLD) {
       lastPlayedDist[i] = distances[i];
-      if (largestDiff <= diff) {
-        largestDiff = diff;
-        largestSensor = i;
-      }
-      hasUpdated = true;
     }
-  }
-
-  if (hasUpdated && delayCounter <= 0) { 
-      delayCounter = DELAY_TIME;
-      playCounter = PLAY_TIME;
-      playSound = true;
-      SensorCauseSound = largestSensor;
   }
 }
 
@@ -67,6 +55,23 @@ double getDeltaTime() {
 }
 
 void update_sound(double deltaTime, int* distances) {
+  SensorCauseSound = -1;
+  if (delayCounter <= 0) {
+    int maxDiff = 0;
+    for (int i = 0; i < 4; i++) {
+      if (diff[i] >= maxDiff) {
+        SensorCauseSound = i;
+        maxDiff = diff[i];
+      }
+    }
+
+    if (maxDiff > THRESHOLD) {
+      delayCounter = DELAY_TIME;
+      playCounter = PLAY_TIME;
+      playSound = true;
+    }
+  }
+
   if (playCounter <= 0) {
     noTone(BUZZER_PIN);
   } else {
@@ -102,9 +107,10 @@ void printLog(double deltaTime) {
   Serial.print(" PCtr: " + String(playCounter));
   Serial.print(" (dist, LastDist): ");
   for (int i = 0; i < 4; i++) {
-    Serial.print("(" + String(distances[i]) + "," + String(lastPlayedDist[i])+ ") ");
+    Serial.print("(" + String(distances[i]) + "," + String(lastPlayedDist[i]) + "," + String(diff[i]) + ") ");
   } 
   Serial.print("isPlay: " + String(playCounter > 0));
+  Serial.print(" isDelay: " + String(delayCounter > 0));
   Serial.print(" Sensor: " + String(SensorCauseSound));
   Serial.println();
 }
