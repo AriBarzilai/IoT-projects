@@ -3,23 +3,28 @@
 
 #define LED_PIN 2
 #define LED_COUNT 12
-#define DHTPIN 7
-#define DHTTYPE DHT22
+#define DHT_PIN 3
+#define DHT_TYPE DHT22
+#define FAN_PIN 4
 
 #define DEBUG_MODE true
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
-DHT dht(DHTPIN, DHTTYPE);
+DHT dht(DHT_PIN, DHT_TYPE);
 
 double lightVal;
 float humidity;
 float temperature;
 int gradient_mode = 0;
+bool fanOn = false; // checks if fan is currently powered
 
 void setup()
 {
   Serial.begin(9600);
   pinMode(A0, INPUT);
+  pinMode(FAN_PIN, OUTPUT);
+
+
   strip.begin();
   strip.show();
   strip.setBrightness(150);
@@ -33,8 +38,21 @@ void loop()
   // update humidity + temperature readings (in Celsius)
   humidity = dht.readHumidity();
   temperature = dht.readTemperature();
+  double aT = 1.1*temperature + 0.0261*humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online
 
   logData();
+
+  if (aT > 25) {
+      if (!fanOn) {
+        fanOn = true;
+        analogWrite(FAN_PIN, 255);
+      }
+  } else {
+    if (fanOn) {
+      fanOn = false;
+      analogWrite(FAN_PIN, 0);
+    }
+  }
 
   if (lightVal < 200)
   {
