@@ -30,7 +30,12 @@ void IRAM_ATTR dmpDataReady()
   mpuInterrupt = true;
 }
 
-void begin()
+char mpuToJoystick();
+boolean readMPU();
+float rangeMPU(float value);
+char getMPU_key();
+
+void initializeMPU()
 {
     mpu.initialize();
     devStatus = mpu.dmpInitialize();
@@ -47,9 +52,9 @@ void begin()
 
 char mpuToJoystick()
 {
-    key = NULL;
+    key = ' ';
     if (!readMPU())
-        return NULL;
+        return ' ';
 
     key = getMPU_key();
 

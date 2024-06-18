@@ -6,7 +6,16 @@ BleKeyboard bleJoystick("joystick");
 
 bool play = false;
 bool quit = false;
-bool pause = true;
+bool isPaused = true;
+
+
+  void playMode();
+  void pauseMode();
+  void quitMode();
+  void initializeMPU();
+  void initializeEncoder();
+  void initializeGodMode();
+  bool getStatus();
 
 void setup()
 {
@@ -17,21 +26,21 @@ void setup()
   bleJoystick.begin();
   while (!bleJoystick.isConnected())
     ;
+  initializeMPU();
+  initializeEncoder();
+  initializeGodMode();
 }
 
 void loop()
 {
-  pause = getStatus();
-  
+  isPaused = getStatus();
   if (play)
     playMode();
-  else if (pause)
+  else if (isPaused)
     pauseMode();
   else if (quit)
     quitMode();
 }
-
-
 
 void playMode()
 {

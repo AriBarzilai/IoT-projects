@@ -8,11 +8,8 @@ volatile int encoderPos = 0;
 int currentEncoderPos = 0;
 int lastEncoderPos = 0;
 
-void IRAM_ATTR handleEncoder() {
-  
-}
 
-void beginEncoder()
+void initializeEncoder()
 {
 
 }
