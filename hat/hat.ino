@@ -1,3 +1,6 @@
+// Multi-Purpose Wizard Helm: It lights up in the dark, cools you down in the heat, protects your head, and displays the temperature
+// Read the attached PDF file for additional code explanation
+
 #include <Adafruit_NeoPixel.h>
 #include "DHT.h"
 #include <LiquidCrystal.h> // v1.07
@@ -19,7 +22,7 @@
 #define LCD_D7 10
 
 #define DEBUG_MODE true
-#define LIGHT_THRESHOLD 300
+#define LIGHT_THRESHOLD 200
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800); // LED
 DHT dht(DHT_PIN, DHT_TYPE);                                        // humidity+temperature sensor
