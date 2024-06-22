@@ -2,22 +2,19 @@
 #include <BleKeyboard.h>
 
 BleKeyboard bleJoystick("joystick");
-char key, prevKey;
+char key;
 
 bool play = false;
 bool quit = false;
 bool isPaused = true;
 
-void mpuJoystickMode();
-void pauseMode();
-void quitMode();
 void initializeMPU();
-void initializeEncoder();
-void initializeGodMode();
-bool getStatus();
 char mpuToJoystick();
-char getGodModeKey();
-bool godModeIsActive();
+
+void initComboHandler();
+void updateSensors();
+bool hasPressedCombo();
+char getComboSymbol();
 
 void setup()
 {
@@ -28,49 +25,20 @@ void setup()
   while (!bleJoystick.isConnected())
     ;
   initializeMPU();
-
-  // initializeEncoder();
-  // initializeGodMode();
+  initComboHandler();
 }
 
 void loop()
 {
-  // isPaused = getStatus();
-  // if (play)
-  //   mpuJoystickMode();
-  // else if (isPaused)
-  //   pauseMode();
-  // else if (quit)
-  //   quitMode();
-  key = mpuToJoystick();
-  if (key != ' ')
-  {
-    bleJoystick.write(key);
-    prevKey = key;
-  }
-}
 
-void mpuJoystickMode()
-{
-
-  if (godModeIsActive())
+  updateSensors();
+  if (hasPressedCombo())
   {
-    key = getGodModeKey();
+    key = getComboSymbol();
     bleJoystick.write(key);
   }
-  else if (key != ' ')
+  else if ((key = mpuToJoystick()) != ' ') 
   {
-    key = mpuToJoystick();
     bleJoystick.write(key);
-
-    prevKey = key;
   }
-}
-
-void pauseMode()
-{
-}
-
-void quitMode()
-{
 }
