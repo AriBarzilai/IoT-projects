@@ -36,6 +36,7 @@ void updateSensors();
 void updateCombo(deviceType device, int value);
 int getEncoderDirection();
 bool isMatch(deviceType device, int value);
+void printDevice(char *printMod, deviceType device, int value);
 bool hasPressedCombo();
 char getComboSymbol();
 
@@ -143,6 +144,7 @@ void updateSensors()
 
 void updateCombo(deviceType device, int value)
 {
+  char *printMod = "[ ] ";
   if (currentKey == nullptr)
   {
     return;
@@ -154,14 +156,10 @@ void updateCombo(deviceType device, int value)
 
   if (isMatch(device, value))
   {
-    Serial.print("d: ");
-    Serial.print(device);
-    Serial.print("\tv: ");
-    Serial.println(value);
     if (currentKey == &combo.back())
     {
       currComboStatus = true; // Last element matched, combo is successful
-      Serial.println("Combo matched");
+      printMod = "[C] ";
     }
     else
     {
@@ -171,18 +169,13 @@ void updateCombo(deviceType device, int value)
   else
   {
     currentKey = &combo[0]; // Reset to the first element if not matched
-    Serial.print("Reset combo");
-    Serial.print("\td: ");
-    Serial.print(device);
-    Serial.print("\tv: ");
-    Serial.println(value);
-
+    printMod = "[R] ";
     if (isMatch(device, value))
     {
       if (currentKey == &combo.back())
       {
         currComboStatus = true; // Last element matched, combo is successful
-        Serial.println("Combo matched");
+        printMod = "[C] ";
       }
       else
       {
@@ -190,6 +183,7 @@ void updateCombo(deviceType device, int value)
       }
     }
   }
+  printDevice(printMod, device, value);
 }
 
 // Function to get and reset the encoder direction
@@ -231,4 +225,56 @@ bool hasPressedCombo()
 char getComboSymbol()
 {
   return comboSymbol;
+}
+
+void printDevice(char *printMod, deviceType device, int value)
+{
+  Serial.print(printMod);
+  Serial.print("c: ");
+  Serial.print(currentKey - &combo[0]);
+  Serial.print("\td: ");
+  switch (device)
+  {
+  case LIGHT_SENSOR:
+    Serial.print("L_SENSOR");
+    break;
+  case ENCODER:
+    Serial.print("ENCODER");
+    break;
+  case BUTTON:
+    Serial.print("BUTTON");
+    break;
+  }
+  Serial.print("\tv: ");
+  if (device == ENCODER)
+  {
+    switch (value)
+    {
+    case LEFT:
+      Serial.print("LEFT");
+      break;
+    case RIGHT:
+      Serial.print("RIGHT");
+      break;
+    }
+  }
+  else if (device == BUTTON)
+  {
+    switch (value)
+    {
+    case 0:
+      Serial.print("PRESS");
+      break;
+    case 1:
+      Serial.print("RELEASE");
+      break;
+    default:
+      break;
+    }
+  }
+  else
+  {
+    Serial.print(value);
+  }
+  Serial.println();
 }

@@ -15,6 +15,7 @@ void initComboHandler();
 void updateSensors();
 bool hasPressedCombo();
 char getComboSymbol();
+void printDevice();
 
 void setup()
 {
@@ -37,7 +38,7 @@ void loop()
     key = getComboSymbol();
     bleJoystick.write(key);
   }
-  else if ((key = mpuToJoystick()) != ' ') 
+  else if ((key = mpuToJoystick()) != ' ')
   {
     bleJoystick.write(key);
   }
