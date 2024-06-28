@@ -6,7 +6,6 @@ boolean readMPU();
 float range(float value);
 char getMPU_key();
 
-// #define INTERVAL 1 // interval in milliseconds to read the MPU6050 data only 20 times per second
 
 unsigned long previousMillis = 0;
 unsigned long currentMillis = 0;
@@ -55,11 +54,6 @@ char mpuToJoystick()
 {
     if(readMPU())
         return getMPU_key();
-    // if ((currentMillis = millis()) - previousMillis >= INTERVAL && readMPU())
-    // {
-    //     previousMillis = currentMillis;
-    //     return getMPU_key();
-    // }
 
     return ' ';
 }
