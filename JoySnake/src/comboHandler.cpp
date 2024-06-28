@@ -43,6 +43,7 @@ char getComboSymbol();
 // LIGHT SENSOR VARS
 double interval = 500; // time between each check of light sensor
 unsigned long currTime = 0.0;
+volatile unsigned long last_time; // for debouncing
 
 unsigned long prevLightTime = -interval;
 unsigned long prevEncoderTime = -interval;
@@ -75,6 +76,9 @@ void IRAM_ATTR handleEncoderInterrupt()
 // Interrupt handler for encoder button press
 void IRAM_ATTR handleButtonInterrupt()
 {
+  if ((millis() - last_time) < 50) // debounce time is 50ms
+    return;
+  last_time = millis();
   buttonPressed = true;
 }
 
@@ -82,11 +86,12 @@ void initComboHandler()
 {
 
   pinMode(ENCODER_BUTTON, INPUT_PULLUP);
-  pinMode(ENCODER_PIN_A, INPUT_PULLUP);
-  pinMode(ENCODER_PIN_B, INPUT_PULLUP);
+  pinMode(ENCODER_PIN_A, INPUT);
+  pinMode(ENCODER_PIN_B, INPUT);
+  pinMode(LIGHT_SENSOR_PIN, INPUT);
 
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), handleEncoderInterrupt, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_BUTTON), handleButtonInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), handleEncoderInterrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_BUTTON), handleButtonInterrupt, RISING);
   createCombo(
       createComboKey(ENCODER, LEFT),
       createComboKey(BUTTON, 0),

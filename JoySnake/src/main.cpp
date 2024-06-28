@@ -31,7 +31,6 @@ void setup()
 
 void loop()
 {
-
   updateSensors();
   if (hasPressedCombo())
   {
