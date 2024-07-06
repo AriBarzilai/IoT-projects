@@ -35,9 +35,9 @@ int gradient_mode = 0;
 bool fanOn = false; // checks if fan is currently powered
 double aT = 0.0;
 
-double tempInterval = 3000; // time between each check of temperature/humidity sensor
-unsigned long currTempTime = 0.0;
-unsigned long prevTempTime = -tempInterval;
+double interval = 3000; // time between each check of temperature/humidity sensor
+unsigned long currTime = 0.0;
+unsigned long prevTime = -interval;
 bool doUpdate = false; // used to update fan checks
 
 double printInterval = 1000;
@@ -77,10 +77,10 @@ void loop()
   // update light sensor reading
   lightVal = 1023 - analogRead(A0);
 
-  currTempTime = millis();
-  currPrintTime = currTempTime;
+  currTime = millis();
+  currPrintTime = currTime;
 
-  if (currTempTime - prevTempTime >= tempInterval)
+  if (currTime - prevTime >= interval)
   {
     // update humidity + temperature readings (in Celsius)
     double tempH = dht.readHumidity();
@@ -89,7 +89,7 @@ void loop()
     { // update only if successfully read temperature / humidity
       humidity = tempH;
       temperature = tempT;
-      prevTempTime = currTempTime;
+      prevTime = currTime;
       doUpdate = true;
       aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online
     }
@@ -170,7 +170,7 @@ void screenPrint()
     // FIRST ROW
     lcd.print("Temp: "); // cols 0-5
     for (int i = 0; i < updateCounter; i++)
-    {                                                
+    {
       lcd.print(". "); // cols 6-7, 8-9, 10-11
     }
 
@@ -193,7 +193,7 @@ void screenPrint()
       lcd.print("HOT");
     }
 
-    updateCounter = (updateCounter+1)%4;
+    updateCounter = (updateCounter + 1) % 4;
   }
 }
 
@@ -210,7 +210,7 @@ void logData()
     Serial.print("  aT: ");
     Serial.print(aT);
     Serial.print("  DelL:  ");
-    Serial.print(currTempTime - prevTempTime);
+    Serial.print(currTime - prevTime);
     if (doUpdate)
     {
       Serial.print(" UL");
