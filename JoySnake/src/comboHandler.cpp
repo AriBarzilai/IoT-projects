@@ -7,7 +7,9 @@
 #define ENCODER_BUTTON 27
 #define ENCODER_PIN_A 25
 #define ENCODER_PIN_B 26
-#define MIN_LIGHT_SENSOR_THRESHOLD 1000
+
+#define MIN_LIGHT_SENSOR_THRESHOLD 1600 // high values: dark; low values: bright; we set minimum to ignore noise from default light level.
+// might need callibration according to your surrounding light level
 
 enum deviceType
 {
@@ -43,11 +45,13 @@ char getComboSymbol();
 // LIGHT SENSOR VARS
 double interval = 500; // time between each check of light sensor
 unsigned long currTime = 0.0;
-volatile unsigned long last_time; // for debouncing
 
-unsigned long prevLightTime = -interval;
+unsigned long prevLightTime = -interval; // for timer on combo handle
 unsigned long prevEncoderTime = -interval;
 unsigned long prevButtonTime = -interval;
+
+volatile unsigned long prevButtonInterrupt; // for debouncing on interrupt
+volatile unsigned long prevEncoderInterrupt;
 
 int darkVal = 0; // how much lack of light does the light sensor sense
 
@@ -62,6 +66,8 @@ volatile int lastDirection = STATIONARY; // -1 for left, 1 for right, 0 for no m
 // Interrupt handler for encoder rotation
 void IRAM_ATTR handleEncoderInterrupt()
 {
+  if ((millis() - prevEncoderInterrupt) < 40) // debounce time is 50ms
+    return;
   static int lastStateA = 0;
   int stateA = digitalRead(ENCODER_PIN_A);
   int stateB = digitalRead(ENCODER_PIN_B);
@@ -71,14 +77,15 @@ void IRAM_ATTR handleEncoderInterrupt()
     lastDirection = (stateA == stateB) ? RIGHT : LEFT;
     lastStateA = stateA;
   }
+  prevEncoderInterrupt = millis();
 }
 
 // Interrupt handler for encoder button press
 void IRAM_ATTR handleButtonInterrupt()
 {
-  if ((millis() - last_time) < 50) // debounce time is 50ms
+  if ((millis() - prevButtonInterrupt) < 40) // debounce time is 50ms
     return;
-  last_time = millis();
+  prevButtonInterrupt = millis();
   buttonPressed = true;
 }
 
@@ -93,9 +100,10 @@ void initComboHandler()
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), handleEncoderInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_BUTTON), handleButtonInterrupt, RISING);
   createCombo(
-      createComboKey(ENCODER, LEFT),
       createComboKey(BUTTON, 0),
-      createComboKey(ENCODER, RIGHT));
+      createComboKey(LIGHT_SENSOR, MIN_LIGHT_SENSOR_THRESHOLD),
+      createComboKey(BUTTON, 0),
+      createComboKey(ENCODER, LEFT));
 }
 
 key createComboKey(deviceType device, int threshold)
@@ -164,6 +172,7 @@ void updateCombo(deviceType device, int value)
     if (currentKey == &combo.back())
     {
       currComboStatus = true; // Last element matched, combo is successful
+      currentKey = &combo[0];
       printMod = "[C] ";
     }
     else
@@ -180,6 +189,7 @@ void updateCombo(deviceType device, int value)
       if (currentKey == &combo.back())
       {
         currComboStatus = true; // Last element matched, combo is successful
+        currentKey = &combo[0];
         printMod = "[C] ";
       }
       else
