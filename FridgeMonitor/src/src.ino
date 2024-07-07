@@ -9,7 +9,7 @@
 #define REFRIGERATOR_PIN 35
 #define FREEZER_PIN 34
 #define BUZZER_PIN 19
-#define LED_PIN 26
+#define LED_PIN 33
 
 #define LED_COUNT 12
 #define DELAY_TIME 300     // the number of milliseconds between the start of one sound and the next
@@ -58,17 +58,17 @@ void myTimerEvent()
 {
   String refrigeratorStatus = currRefrigeratorOpen ? "Open" : "Closed";
   String freezerStatus = currFreezerOpen ? "Open" : "Closed";
-  
- Blynk.virtualWrite(V1, freezerStatus);
- Blynk.virtualWrite(V2, refrigeratorStatus);
 
- if (millis() - lastWebhookTime >= WEBHOOK_INTERVAL) {
+  Blynk.virtualWrite(V1, freezerStatus);
+  Blynk.virtualWrite(V2, refrigeratorStatus);
+
+  if (millis() - lastWebhookTime >= WEBHOOK_INTERVAL)
+  {
     // Send the data to the webhook
-  Blynk.logEvent("fridge_status", refrigeratorStatus + "," + freezerStatus);
+    Blynk.logEvent("fridge_status", refrigeratorStatus + "," + freezerStatus);
     lastWebhookTime = millis();
   }
 }
-
 
 void setup()
 {
@@ -80,6 +80,9 @@ void setup()
   pinMode(REFRIGERATOR_PIN, INPUT);
   pinMode(FREEZER_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
+  
+  ledcSetup(TONE_PWM_CHANNEL, 5000, 8);  // 5 kHz frequency, 8-bit resolution
+  ledcAttachPin(BUZZER_PIN, TONE_PWM_CHANNEL); // Attach the channel to the pin
 
   strip.begin();
   strip.show();
@@ -99,7 +102,7 @@ void loop()
     prevRefrigeratorUpdate = millis();
   }
 
-  loopLED();
+  // loopLED();
   loopFreezer();
   loopRefrigerator();
   loopBuzzer();
@@ -113,7 +116,9 @@ void loopFreezer()
   if (currFreezerOpen && (currFreezerOpen != prevFreezerOpen))
   {
     prevFreezerUpdate = millis();
-  } else if (!currFreezerOpen) {
+  }
+  else if (!currFreezerOpen)
+  {
     prevFreezerUpdate = millis();
   }
   freezerAlarm = (millis() - prevFreezerUpdate > freezerInterval);
@@ -125,7 +130,9 @@ void loopRefrigerator()
   if (currRefrigeratorOpen && (currRefrigeratorOpen != prevRefrigeratorOpen))
   {
     prevRefrigeratorUpdate = millis();
-  } else if (!currRefrigeratorOpen) {
+  }
+  else if (!currRefrigeratorOpen)
+  {
     prevRefrigeratorUpdate = millis();
   }
   refrigeratorAlarm = (millis() - prevRefrigeratorUpdate > freezerInterval);
@@ -136,19 +143,15 @@ void loopLED()
 {
   if (millis() - prevLEDUpdate > LEDinterval)
   {
-    if (currFreezerOpen)
+    int red = (currFreezerOpen ? 255 : 0);
+    for (int i = 0; i < (strip.numPixels() / 2); i++)
     {
-      for (int i = 0; i < (strip.numPixels() / 2); i++)
-      {
-        strip.setPixelColor(i, strip.Color(255, 0, 0));
-      }
+      strip.setPixelColor(i, strip.Color(255, 0, 0));
     }
-    if (currRefrigeratorOpen)
+    red = (currRefrigeratorOpen ? 255 : 0);
+    for (int i = (strip.numPixels() / 2); i < strip.numPixels(); i++)
     {
-      for (int i = (strip.numPixels() / 2); i < strip.numPixels(); i++)
-      {
-        strip.setPixelColor(i, strip.Color(255, 0, 0));
-      }
+      strip.setPixelColor(i, strip.Color(red, 0, 0));
     }
     strip.show();
     prevLEDUpdate = millis();
@@ -159,7 +162,8 @@ void loopBuzzer()
 {
   if (!freezerAlarm && !refrigeratorAlarm)
   {
-    if (soundBuzzer) {
+    if (soundBuzzer)
+    {
       noTone(BUZZER_PIN);
     }
     soundBuzzer = true; // reset alarms
