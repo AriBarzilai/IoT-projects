@@ -1,6 +1,7 @@
 #include "keys.h" // This file contains the WIFI_SSID, WIFI_PASS and BLYNK_AUTH_TOKEN must be included first
 #include "pitches.h"
 
+#include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
@@ -21,8 +22,6 @@
 
 bool DEBUG_MODE = true;
 
-// Your WiFi credentials.
-// Set password to "" for open networks.
 char ssid[] = WIFI_SSID;
 char pass[] = WIFI_PASS;
 
@@ -31,17 +30,14 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800); // LED
 
 bool currRefrigeratorOpen = false; // current refrigerator state (true = open)
 bool currFreezerOpen = false;      // current freezer state
-bool prevRefrigeratorOpen = false;
-bool prevFreezerOpen = false;
 
-bool refrigeratorAlarm = false;
-bool freezerAlarm = false;
+#define ALARM_DELAY 180000 // 3 minutes
 
-unsigned long openTime = 0;
+unsigned long doorOpenTime = 0; // 10 seconds
+bool alarmStatus = false;
+bool soundBuzzer = true;
+bool isNotificationSent = false;
 
-double LEDinterval = 50;
-double freezerInterval = 10000;
-double refrigeratorInterval = 10000;
 double playBuzzerInterval = 300;
 double haltBuzzerInterval = 1000;
 volatile unsigned long prevLEDUpdate = millis();
@@ -49,25 +45,11 @@ volatile unsigned long prevFreezerUpdate = millis();
 volatile unsigned long prevRefrigeratorUpdate = millis();
 volatile unsigned long prevBuzzerUpdate = millis();
 
-bool soundBuzzer = true;
-
-#define WEBHOOK_INTERVAL 240000 // 4 minutes in milliseconds
-unsigned long lastWebhookTime = 0;
-
 void myTimerEvent()
 {
-  String refrigeratorStatus = currRefrigeratorOpen ? "Open" : "Closed";
-  String freezerStatus = currFreezerOpen ? "Open" : "Closed";
 
-  Blynk.virtualWrite(V1, freezerStatus);
-  Blynk.virtualWrite(V2, refrigeratorStatus);
-
-  if (millis() - lastWebhookTime >= WEBHOOK_INTERVAL)
-  {
-    // Send the data to the webhook
-    Blynk.logEvent("fridge_status", refrigeratorStatus + "," + freezerStatus);
-    lastWebhookTime = millis();
-  }
+  Blynk.virtualWrite(V1, currFreezerOpen ? "Open" : "Closed");
+  Blynk.virtualWrite(V2, currRefrigeratorOpen ? "Open" : "Closed");
 }
 
 void setup()
@@ -80,8 +62,8 @@ void setup()
   pinMode(REFRIGERATOR_PIN, INPUT);
   pinMode(FREEZER_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
-  
-  ledcSetup(TONE_PWM_CHANNEL, 5000, 8);  // 5 kHz frequency, 8-bit resolution
+
+  ledcSetup(TONE_PWM_CHANNEL, 5000, 8);        // 5 kHz frequency, 8-bit resolution
   ledcAttachPin(BUZZER_PIN, TONE_PWM_CHANNEL); // Attach the channel to the pin
 
   strip.begin();
@@ -91,76 +73,58 @@ void setup()
 
 void loop()
 {
-  currFreezerOpen = digitalRead(FREEZER_PIN) == 0;
-  currRefrigeratorOpen = digitalRead(REFRIGERATOR_PIN) == 0;
+  currFreezerOpen = digitalRead(FREEZER_PIN) == 0;           // 0 means open
+  currRefrigeratorOpen = digitalRead(REFRIGERATOR_PIN) == 0; // 0 means open
 
   Blynk.run();
   timer.run();
 
-  if (currRefrigeratorOpen && (currRefrigeratorOpen != prevRefrigeratorOpen))
-  {
-    prevRefrigeratorUpdate = millis();
-  }
+  loopLED((currFreezerOpen ? 255 : 0), 0, (strip.numPixels() / 2));
+  loopLED((currRefrigeratorOpen ? 255 : 0), (strip.numPixels() / 2), strip.numPixels());
 
-  // loopLED();
-  loopFreezer();
-  loopRefrigerator();
+  upddateAlarmStatus();
   loopBuzzer();
-
-  log();
-  prevRefrigeratorOpen = currRefrigeratorOpen;
 }
 
-void loopFreezer()
+void loopLED(int red, int srtat, int end)
 {
-  if (currFreezerOpen && (currFreezerOpen != prevFreezerOpen))
+  for (int i = srtat; i < end; i++)
   {
-    prevFreezerUpdate = millis();
+    strip.setPixelColor(i, strip.Color(red, 0, 0));
   }
-  else if (!currFreezerOpen)
-  {
-    prevFreezerUpdate = millis();
-  }
-  freezerAlarm = (millis() - prevFreezerUpdate > freezerInterval);
-  prevFreezerOpen = currFreezerOpen;
+  strip.show();
 }
 
-void loopRefrigerator()
+void upddateAlarmStatus()
 {
-  if (currRefrigeratorOpen && (currRefrigeratorOpen != prevRefrigeratorOpen))
+  if (currFreezerOpen || currRefrigeratorOpen)
   {
-    prevRefrigeratorUpdate = millis();
-  }
-  else if (!currRefrigeratorOpen)
-  {
-    prevRefrigeratorUpdate = millis();
-  }
-  refrigeratorAlarm = (millis() - prevRefrigeratorUpdate > freezerInterval);
-  prevRefrigeratorOpen = currRefrigeratorOpen;
-}
+    doorOpenTime = (doorOpenTime == 0) ? millis() : doorOpenTime;
 
-void loopLED()
-{
-  if (millis() - prevLEDUpdate > LEDinterval)
-  {
-    int red = (currFreezerOpen ? 255 : 0);
-    for (int i = 0; i < (strip.numPixels() / 2); i++)
+    if (!isNotificationSent && millis() - doorOpenTime > ALARM_DELAY)
     {
-      strip.setPixelColor(i, strip.Color(255, 0, 0));
+      Blynk.logEvent("fridg_open");
+      isNotificationSent = true;
+      alarmStatus = true;
     }
-    red = (currRefrigeratorOpen ? 255 : 0);
-    for (int i = (strip.numPixels() / 2); i < strip.numPixels(); i++)
+    else if (millis() - doorOpenTime > ALARM_DELAY)
     {
-      strip.setPixelColor(i, strip.Color(red, 0, 0));
+      alarmStatus = true;
+
     }
-    strip.show();
-    prevLEDUpdate = millis();
+  }
+  else
+  {
+    doorOpenTime = 0;
+    alarmStatus = false;
+    isNotificationSent = false;
   }
 }
 
 void loopBuzzer()
 {
-  if (!freezerAlarm && !refrigeratorAlarm)
+
+  if (!alarmStatus)
   {
     if (soundBuzzer)
     {
@@ -229,7 +193,7 @@ void log()
     printLogMessage("LED_U", (double)(ms - prevLEDUpdate));
     printLogMessage("F_U", (double)(ms - prevFreezerUpdate));
     printLogMessage("R_U", (double)(ms - prevRefrigeratorUpdate));
-    printLogMessage("ALARM", freezerAlarm || refrigeratorAlarm);
+    // printLogMessage("ALARM", freezerAlarm || refrigeratorAlarm);
     printLogMessage("B_U", (double)(ms - prevBuzzerUpdate));
 
     Serial.println();
