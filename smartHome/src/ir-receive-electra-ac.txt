@@ -1,0 +1,42 @@
+#include <Arduino.h>
+
+#define DECODE_DISTANCE_WIDTH
+#define DECODE_HASH
+#define RAW_BUFFER_LENGTH 250 // Increased further to ensure we capture the full AC signal
+
+#define IR_RECEIVE_PIN 15 // D15
+
+#include <IRremote.hpp>
+String power = "ON";
+String mode = "COLD";
+String fan = "1";
+
+
+
+
+void setup()
+{
+    Serial.begin(115200);
+    IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
+    
+    Serial.println();
+    Serial.print("Power: ");
+    Serial.print(power);
+    Serial.print(" Mode: ");
+    Serial.print(mode);
+    Serial.print(" Fan: ");
+    Serial.println(fan);
+    Serial.println();
+}
+
+void loop()
+{
+    if (IrReceiver.decode() )
+    {
+
+        IrReceiver.printIRSendUsage(&Serial);
+        
+        Serial.println();
+        IrReceiver.resume();
+    }
+}
