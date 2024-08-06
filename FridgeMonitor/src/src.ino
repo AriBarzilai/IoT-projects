@@ -63,9 +63,7 @@ void setup()
   pinMode(FREEZER_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
 
-  ledcSetup(TONE_PWM_CHANNEL, 5000, 8);        // 5 kHz frequency, 8-bit resolution
-  ledcAttachPin(BUZZER_PIN, TONE_PWM_CHANNEL); // Attach the channel to the pin
-
+  
   strip.begin();
   strip.show();
   strip.setBrightness(150);
@@ -73,6 +71,7 @@ void setup()
 
 void loop()
 {
+  
   currFreezerOpen = digitalRead(FREEZER_PIN) == 0;           // 0 means open
   currRefrigeratorOpen = digitalRead(REFRIGERATOR_PIN) == 0; // 0 means open
 

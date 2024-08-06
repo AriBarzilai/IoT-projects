@@ -1,0 +1,62 @@
+Power: ON Mode: COLD Fan: AUTO
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF747C3, 0xFD01002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9050, 4500, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF74FC3, 0x400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF757C3, 0xC00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF75FC3, 0x1400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9050, 4500, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF767C3, 0x1C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF76FC3, 0x2400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9100, 4450, 600, 1700, 600, 600, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF777C3, 0x2C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9050, 4450, 600, 1700, 600, 600, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF77FC3, 0x3400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF787C3, 0x3C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9100, 4450, 600, 1700, 600, 600, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF78FC3, 0x4400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4500, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF797C3, 0x4C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9050, 4500, 600, 1700, 600, 600, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF79FC3, 0x5400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF7A7C3, 0x5C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1700, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF7AFC3, 0x6400002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4550, 550, 1750, 550, 650, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
+Send with:
+    uint64_t tRawData[]={0x2000A01BF7B7C3, 0x6C00002000};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9100, 4450, 600, 1700, 600, 600, &tRawData[0], 104, PROTOCOL_IS_LSB_FIRST, <RepeatPeriodMillis>, <numberOfRepeats>);
+
