@@ -97,9 +97,12 @@ def create_excel_file(data, output_file):
     df.to_excel(output_file, index=False, engine='openpyxl')
     print(f"Excel file '{output_file}' has been created successfully with {df.shape[0]} rows.")
 
-# Usage
-base_folder = r"C:\Users\avrah\OneDrive\Desktop\IoT-projects\smartHome\ac_command_data"
-output_file = r"C:\Users\avrah\OneDrive\Desktop\IoT-projects\smartHome\ac_command_data.xlsx"
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the paths relative to the script directory
+base_folder = os.path.join(script_dir, "logs")
+output_file = os.path.join(script_dir, "ac_command_data.xlsx")
 
 all_data = []
 

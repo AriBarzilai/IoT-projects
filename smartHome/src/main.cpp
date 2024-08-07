@@ -1,19 +1,44 @@
 #include <Arduino.h>
 
-void electraRemoteSetup();
-void sendAccommand(bool on, bool cold, int8_t fan ,int8_t tmp);
+#include "electraRemote\electraRemote.h"
 
+ElectraRemote remot;
 
 void setup() {
-    Serial.begin(115200);
-    electraRemoteSetup();
+    Serial.begin(9600);
+    remot = ElectraRemote();
 }
 
 void loop() {
-    for(int j = 1; j <= 4; j++){
-    for(int i = 16; i <= 30; i++){
-            sendAccommand(true, true, j, i);
-            delay(1000);
-        }
+    Serial.println("Enter command:");
+    
+    while(!Serial.available());
+    
+    String command = Serial.readStringUntil('\n');
+    command.trim();  
+
+    if (command == "on") {
+        remot.setPowerState(PowerState::ON);
+    } else if (command == "off") {
+        remot.setPowerState(PowerState::OFF);
+    } else if (command == "fan1") {
+        remot.setFanSpeed(FanSpeed::FAN_1);
+    } else if (command == "fan2") {
+        remot.setFanSpeed(FanSpeed::FAN_2);
+    } else if (command == "fan3") {
+        remot.setFanSpeed(FanSpeed::FAN_3);
+    } else if (command == "fanAuto") {
+        remot.setFanSpeed(FanSpeed::FAN_AUTO);
+    } else {
+            // Try to parse the command as an integer for temperature
+            int temp = command.toInt();
+            if (temp != 0 || command == "0") {  // toInt() returns 0 for invalid input
+                remot.setTemperature(temp);
+            } else {
+                Serial.println("Invalid command");
+            }
     }
+    delay(1000);
+    
 }
+

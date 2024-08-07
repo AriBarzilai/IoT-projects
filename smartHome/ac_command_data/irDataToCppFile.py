@@ -1,8 +1,12 @@
 import pandas as pd
 import os
 
-# Assuming the Excel file is in the same directory as the script
-file_path = r"C:\Users\avrah\OneDrive\Desktop\IoT-projects\smartHome\ac_command_data.xlsx"
+
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the file path relative to the script directory
+file_path = os.path.join(script_dir, "ac_command_data.xlsx")
 
 # Check if the file exists
 if not os.path.exists(file_path):
@@ -21,7 +25,7 @@ except Exception as e:
 
 # Define the C++ struct template
 cpp_struct_template = """
-AcCommand {array_name}[] = {{
+AcCommand {array_name}[TEMPERATURES] = {{
     {structs}
 }};
 """
@@ -73,7 +77,7 @@ for power, mode, fan_mode, array_name in command_sets:
     cpp_code += "\n"
 
 # Save the generated C++ code to a file
-output_path = r"C:\Users\avrah\OneDrive\Desktop\IoT-projects\smartHome\ac_command_data.cpp"
+output_path = os.path.join(script_dir, "ac_command_data.cpp")
 try:
     with open(output_path, 'w') as f:
         f.write(cpp_code)
