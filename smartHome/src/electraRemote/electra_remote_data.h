@@ -14,7 +14,7 @@ struct AcCommand {
 };
 
 constexpr size_t FAN_SPEEDS = 4;
-constexpr int8_t TEMPERATURES = 15;
+constexpr size_t TEMPERATURES = 15;
 
 extern const AcCommand ON_COLD_FAN1[TEMPERATURES];
 extern const AcCommand ON_COLD_FAN2[TEMPERATURES];

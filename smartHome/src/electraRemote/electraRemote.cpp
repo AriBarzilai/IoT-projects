@@ -76,8 +76,5 @@ void ElectraRemote::transmitIRCommand(const AcCommand &command)
         104,
         PROTOCOL_IS_LSB_FIRST,
         0,
-        0
-    );
-
-   
+        0);
 }
