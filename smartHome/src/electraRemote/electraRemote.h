@@ -4,11 +4,26 @@
 #include <stdint.h>
 #include "electra_remote_data.h"
 
-enum class PowerState { OFF, ON };
-enum class TemperatureMode { COLD, HOT };
-enum class FanSpeed { FAN_1 = 1, FAN_2 = 2, FAN_3 = 3, FAN_AUTO = 4 };
+enum class PowerState
+{
+    OFF,
+    ON
+};
+enum class TemperatureMode
+{
+    COLD,
+    HOT
+};
+enum class FanSpeed
+{
+    FAN_1 = 1,
+    FAN_2 = 2,
+    FAN_3 = 3,
+    FAN_AUTO = 4
+};
 
-class ElectraRemote {
+class ElectraRemote
+{
 public:
     ElectraRemote();
     void setFanSpeed(FanSpeed speed);
@@ -23,7 +38,7 @@ private:
     uint8_t temperature;
 
     void transmitCurrentState();
-    void transmitIRCommand(const AcCommand& command);
+    void transmitIRCommand(const AcCommand &command);
 };
 
 #endif // ELECTRA_REMOTE_H
