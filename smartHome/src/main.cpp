@@ -5,21 +5,32 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
+#include <DHT.h>
+
+// DHT PINS
+#define DHT_PIN 15
+#define DHT_TYPE DHT22
 
 #define BLYNK_PRINT Serial // prints to serial
 
 bool DEBUG_MODE = true;
 
-char ssid[] = SSID; // your network SSID (name)
-char pass[] = PASS;
+char ssid[] = WIFI_SSID; // your network SSID (name)
+char pass[] = WIFI_PASS;
 
 ElectraRemote remote;
+BlynkTimer timer;
+DHT dht(DHT_PIN, DHT_TYPE);
+
+void getRoomTemp();
 
 void setup()
 {
     Serial.begin(9600);
     remote = ElectraRemote();
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+    dht.begin();
+    timer.setInterval(3000L, getRoomTemp); // once every minute
 }
 
 double interval = 1000; // time between each check of light sensor
@@ -28,6 +39,30 @@ unsigned long currTime = -interval;
 void loop()
 {
     Blynk.run();
+    timer.run();
+}
+int num = 10;
+
+float humidity;
+float temperature;
+double aT; // apparent temperature
+void getRoomTemp()
+{
+    double tempH = dht.readHumidity();
+    double tempT = dht.readTemperature();
+    if (!isnan(tempH) && !isnan(tempT))
+    {
+        humidity = tempH;
+        temperature = tempT;
+        aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
+        Blynk.virtualWrite(V5, aT);
+        Serial.print("Room temp: ");
+        Serial.println(aT);
+    }
+    else
+    {
+        timer.restartTimer(0);
+    }
 }
 
 // POWER STATE (on/off)
@@ -98,47 +133,3 @@ BLYNK_WRITE(V3)
         Serial.println(pinValue);
     }
 }
-
-/*
-// used for manual command input, for debugging
-void parseCommand(String command)
-{
-    if (command == "on")
-    {
-        remote.setPowerState(PowerState::ON);
-    }
-    else if (command == "off")
-    {
-        remote.setPowerState(PowerState::OFF);
-    }
-    else if (command == "fan1")
-    {
-        remote.setFanSpeed(FanSpeed::FAN_1);
-    }
-    else if (command == "fan2")
-    {
-        remote.setFanSpeed(FanSpeed::FAN_2);
-    }
-    else if (command == "fan3")
-    {
-        remote.setFanSpeed(FanSpeed::FAN_3);
-    }
-    else if (command == "fanAuto")
-    {
-        remote.setFanSpeed(FanSpeed::FAN_AUTO);
-    }
-    else
-    {
-        // Try to parse the command as an integer for temperature
-        int temp = command.toInt();
-        if (temp != 0 || command == "0")
-        { // toInt() returns 0 for invalid input
-            remote.setTemperature(temp);
-        }
-        else
-        {
-            Serial.println("Invalid command");
-        }
-    }
-}
-*/
