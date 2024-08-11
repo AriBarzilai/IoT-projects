@@ -1,17 +1,17 @@
 #include <Arduino.h>
 
-#include "electraRemote\electraRemote.h"
 #include "env.h"
+#include "electraRemote\electraRemote.h"
+#include "presenceDetection\clientHandler.h"
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 #include <DHT.h>
 
-// DHT PINS
+// Temperature sensor
 #define DHT_PIN 15
 #define DHT_TYPE DHT22
-
-#define BLYNK_PRINT Serial // prints to serial
 
 bool DEBUG_MODE = true;
 
@@ -21,15 +21,19 @@ char pass[] = WIFI_PASS;
 ElectraRemote remote;
 BlynkTimer timer;
 DHT dht(DHT_PIN, DHT_TYPE);
+ClientHandler clientHandler;
 
 void getRoomTemp();
 
 void setup()
 {
     Serial.begin(9600);
+
     remote = ElectraRemote();
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
     dht.begin();
+    clientHandler.initClients();
+
     timer.setInterval(3000L, getRoomTemp); // once every minute
 }
 
