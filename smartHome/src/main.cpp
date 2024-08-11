@@ -2,7 +2,7 @@
 
 #include "env.h"
 #include "electraRemote\electraRemote.h"
-#include "presenceDetection\clientHandler.h"
+#include "presenceDetection\tenantHandler.h"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -13,6 +13,15 @@
 #define DHT_PIN 15
 #define DHT_TYPE DHT22
 
+enum State
+{
+    DETECT_CLIMATE,
+    DETECT_PRESENCE,
+    CONTROL_CLIMATE,
+    CONTROLE_PLANTS
+};
+State currState = DETECT_CLIMATE;
+
 bool DEBUG_MODE = true;
 
 char ssid[] = WIFI_SSID; // your network SSID (name)
@@ -21,9 +30,22 @@ char pass[] = WIFI_PASS;
 ElectraRemote remote;
 BlynkTimer timer;
 DHT dht(DHT_PIN, DHT_TYPE);
-ClientHandler clientHandler;
+TenantHandler tenantHandler;
 
+PowerState pwr;
+TemperatureMode tempMode;
+FanSpeed fanSpeed;
+int acTemperature;
+
+int currentTimerID;
+
+void call_controlClimate();
+void call_plantControl();
 void getRoomTemp();
+void call_ping();
+void acSetPwr(int pinValue);
+void acSetTempMode(int pinValue);
+void acSetTemperature(int pinValue);
 
 void setup()
 {
@@ -32,9 +54,9 @@ void setup()
     remote = ElectraRemote();
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
     dht.begin();
-    clientHandler.initClients();
+    tenantHandler.initTenants();
 
-    timer.setInterval(3000L, getRoomTemp); // once every minute
+    currentTimerID = timer.setInterval(3000L, getRoomTemp);
 }
 
 double interval = 1000; // time between each check of light sensor
@@ -62,19 +84,116 @@ void getRoomTemp()
         Blynk.virtualWrite(V5, aT);
         Serial.print("Room temp: ");
         Serial.println(aT);
-    }
-    else
-    {
-        timer.restartTimer(0);
+
+        timer.deleteTimer(currentTimerID);
+        currentTimerID = timer.setInterval(PING_BETWEEN_TENANTS, call_ping);
     }
 }
 
-// POWER STATE (on/off)
-BLYNK_WRITE(V0)
+long pingCooldown = PING_BEFORE_TENANTS;
+long lastTenantPing = -pingCooldown;
+void call_ping()
 {
-    int pinValue = param.asInt();
+    if (millis() - lastTenantPing < pingCooldown)
+    {
+        return;
+    }
 
-    PowerState pwr = (PowerState)pinValue;
+    tenantHandler.pingNextTenant();
+    if (tenantHandler.allTenantsPinged())
+    {
+        pingCooldown = PING_BEFORE_TENANTS;
+        timer.deleteTimer(currentTimerID);
+        lastTenantPing = millis();
+        call_controlClimate();
+    }
+}
+
+long climateControlCooldown = 1200000L;
+long lastClimateOverride = -climateControlCooldown;
+void call_controlClimate()
+{
+    currentTimerID = timer.setInterval(3000L, call_plantControl);
+    if (millis() - lastClimateOverride < climateControlCooldown) // viewed pings too recently
+    {
+        return;
+    }
+
+    if (tenantHandler.getHomeTenantsCount() == 0)
+    {
+        if (pwr == PowerState::ON) // turn off AC
+        {
+            Blynk.virtualWrite(V0, (int)PowerState::OFF);
+            acSetPwr((int)PowerState::OFF);
+        }
+        return;
+    }
+    else
+    {
+        if (pwr == PowerState::ON)
+        {
+            if (tempMode == TemperatureMode::COLD)
+            {
+                if (aT <= 10) // switch to heat mode
+                {
+                    Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
+                    acSetTempMode((int)TemperatureMode::HOT);
+                }
+                else if (aT <= 18) // turn off the AC
+                {
+                    Blynk.virtualWrite(V0, (int)PowerState::OFF);
+                    acSetPwr((int)PowerState::OFF);
+                }
+                return;
+            }
+            else // TEMPMODE HOT
+            {
+                if (aT >= 27) // switch to cold mode
+                {
+                    Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
+                    acSetTempMode((int)TemperatureMode::COLD);
+                }
+                else if (aT >= 22) // turn off the AC
+                {
+                    Blynk.virtualWrite(V0, (int)PowerState::OFF);
+                    acSetPwr((int)PowerState::OFF);
+                }
+                return;
+            }
+        }
+        else
+        {                 // POWER OFF
+            if (aT <= 15) // turn on the AC on heat mode
+            {
+                Blynk.virtualWrite(V0, (int)PowerState::ON);
+                Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
+                Blynk.virtualWrite(V3, 25);
+                acSetPwr((int)PowerState::ON);
+                acSetTempMode((int)TemperatureMode::HOT);
+                acSetTemperature(24);
+            }
+            else if (aT >= 25) // turn on the AC on cold mode
+            {
+                Blynk.virtualWrite(V0, (int)PowerState::ON);
+                Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
+                Blynk.virtualWrite(V3, 16);
+                acSetPwr((int)PowerState::ON);
+                acSetTempMode((int)TemperatureMode::COLD);
+                acSetTemperature(16);
+            }
+        }
+    }
+    return;
+}
+
+void call_plantControl()
+{
+    // control the plants
+}
+
+void acSetPwr(int pinValue)
+{
+    pwr = (PowerState)pinValue;
     remote.setPowerState(pwr);
     if (DEBUG_MODE)
     {
@@ -83,12 +202,9 @@ BLYNK_WRITE(V0)
     }
 }
 
-// TEMPERATURE MODE (cold/hot)
-BLYNK_WRITE(V1)
+void acSetTempMode(int pinValue)
 {
-    int pinValue = param.asInt();
-
-    TemperatureMode tempMode = (TemperatureMode)pinValue;
+    tempMode = (TemperatureMode)pinValue;
     remote.setTemperatureMode(tempMode);
     if (DEBUG_MODE)
     {
@@ -97,17 +213,42 @@ BLYNK_WRITE(V1)
     }
 }
 
+void acSetTemperature(int pinValue)
+{
+    acTemperature = pinValue;
+    remote.setTemperature(acTemperature);
+    if (DEBUG_MODE)
+    {
+        Serial.print("Temperature: ");
+        Serial.println(acTemperature);
+    }
+}
+
+// POWER STATE (on/off)
+BLYNK_WRITE(V0)
+{
+    Serial.print("MANUAL: ");
+    acSetPwr(param.asInt());
+}
+
+// TEMPERATURE MODE (cold/hot)
+BLYNK_WRITE(V1)
+{
+    Serial.print("MANUAL: ");
+    acSetTempMode(param.asInt());
+}
+
 // FAN SPEED (1/2/3/auto)
 BLYNK_WRITE(V2)
 {
     int pinValue = param.asInt();
 
-    FanSpeed fan = (FanSpeed)pinValue;
-    remote.setFanSpeed(fan);
+    fanSpeed = (FanSpeed)pinValue;
+    remote.setFanSpeed(fanSpeed);
     if (DEBUG_MODE)
     {
         Serial.print("Fan Speed: ");
-        switch (fan)
+        switch (fanSpeed)
         {
         case FanSpeed::FAN_1:
             Serial.println("1");
@@ -128,12 +269,6 @@ BLYNK_WRITE(V2)
 // TEMPERATURE (16-30)
 BLYNK_WRITE(V3)
 {
+    Serial.print("MANUAL: ");
     int pinValue = param.asInt();
-
-    remote.setTemperature(pinValue);
-    if (DEBUG_MODE)
-    {
-        Serial.print("Temperature: ");
-        Serial.println(pinValue);
-    }
 }
