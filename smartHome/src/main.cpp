@@ -57,6 +57,7 @@ void setup()
     tenantHandler.initTenants();
 
     currentTimerID = timer.setInterval(3000L, getRoomTemp);
+    Serial.println("BEGIN SMART HOME SYSTEM");
 }
 
 double interval = 1000; // time between each check of light sensor
@@ -78,6 +79,7 @@ void getRoomTemp()
     double tempT = dht.readTemperature();
     if (!isnan(tempH) && !isnan(tempT))
     {
+        Serial.println("CLIMATE DETECTION");
         humidity = tempH;
         temperature = tempT;
         aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
@@ -86,6 +88,7 @@ void getRoomTemp()
         Serial.println(aT);
 
         timer.deleteTimer(currentTimerID);
+        Serial.println("PRESENCE DETECTION");
         currentTimerID = timer.setInterval(PING_BETWEEN_TENANTS, call_ping);
     }
 }
@@ -96,6 +99,8 @@ void call_ping()
 {
     if (millis() - lastTenantPing < pingCooldown)
     {
+        timer.deleteTimer(currentTimerID);
+        currentTimerID = timer.setInterval(5000L, call_controlClimate);
         return;
     }
 
@@ -103,9 +108,10 @@ void call_ping()
     if (tenantHandler.allTenantsPinged())
     {
         pingCooldown = PING_BEFORE_TENANTS;
-        timer.deleteTimer(currentTimerID);
         lastTenantPing = millis();
-        call_controlClimate();
+
+        timer.deleteTimer(currentTimerID);
+        currentTimerID = timer.setInterval(5000L, call_controlClimate);
     }
 }
 
@@ -113,9 +119,12 @@ long climateControlCooldown = 1200000L;
 long lastClimateOverride = -climateControlCooldown;
 void call_controlClimate()
 {
-    currentTimerID = timer.setInterval(3000L, call_plantControl);
-    if (millis() - lastClimateOverride < climateControlCooldown) // viewed pings too recently
+    Serial.println("AUTO CLIMATE CONTROL");
+    if (millis() - lastClimateOverride < climateControlCooldown)
     {
+        Serial.println("Skip");
+        timer.deleteTimer(currentTimerID);
+        currentTimerID = timer.setInterval(3000L, call_plantControl);
         return;
     }
 
@@ -126,7 +135,6 @@ void call_controlClimate()
             Blynk.virtualWrite(V0, (int)PowerState::OFF);
             acSetPwr((int)PowerState::OFF);
         }
-        return;
     }
     else
     {
@@ -144,7 +152,10 @@ void call_controlClimate()
                     Blynk.virtualWrite(V0, (int)PowerState::OFF);
                     acSetPwr((int)PowerState::OFF);
                 }
-                return;
+                else
+                {
+                    Serial.println("AC cooling still necessary");
+                }
             }
             else // TEMPMODE HOT
             {
@@ -158,7 +169,10 @@ void call_controlClimate()
                     Blynk.virtualWrite(V0, (int)PowerState::OFF);
                     acSetPwr((int)PowerState::OFF);
                 }
-                return;
+                else
+                {
+                    Serial.println("AC heating still necessary");
+                }
             }
         }
         else
@@ -183,12 +197,16 @@ void call_controlClimate()
             }
         }
     }
-    return;
+    timer.deleteTimer(currentTimerID);
+    currentTimerID = timer.setInterval(5000L, call_plantControl);
 }
 
 void call_plantControl()
 {
     // control the plants
+    Serial.println("PLANT CONTROL");
+    timer.deleteTimer(currentTimerID);
+    currentTimerID = timer.setInterval(3000L, getRoomTemp);
 }
 
 void acSetPwr(int pinValue)

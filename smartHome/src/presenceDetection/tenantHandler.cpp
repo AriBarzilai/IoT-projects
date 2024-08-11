@@ -7,6 +7,7 @@ void TenantHandler::initTenants()
     tenants.push_back(Tenant(TENANT1_ID, TENANT1_IP));
     tenants.push_back(Tenant(TENANT2_ID, TENANT2_IP));
     tenants.push_back(Tenant(TENANT3_ID, TENANT3_IP));
+    tenants.push_back(Tenant(TENANT4_ID, TENANT4_IP));
 }
 
 void TenantHandler::addTenant(const char *name, IPAddress ip)
@@ -43,28 +44,41 @@ void TenantHandler::removeTenant(const char *name)
 
 bool TenantHandler::isTenantHome(Tenant &tenant)
 {
+    Serial.print("Pinging ");
+    Serial.print(tenant.tenantName);
+    Serial.print(": ");
     // Determine if a tenant is home based on ping response
     if (Ping.ping(tenant.tenant_ip) > 0)
     {
+        Serial.print(" At home");
         tenant.verifyAttempts = 0;
         if (!tenant.isHome)
         {
             tenantsHome++;
             tenant.isHome = true;
+            Serial.print(" (CHANGED)");
         }
+        Serial.println("");
         return true;
     }
     else if (tenant.isHome)
     {
         tenant.verifyAttempts++;
+        Serial.print(" Unreachable");
         if (tenant.verifyAttempts >= PING_ATTMEPTS)
         {
             tenant.isHome = false;
             tenant.verifyAttempts = 0;
             tenantsHome--;
+            Serial.println(" (NOW ABSENT)");
             return false;
         }
     }
+    else
+    {
+        Serial.print(" Absent");
+    }
+    Serial.println("");
     return tenant.isHome;
 }
 
@@ -81,7 +95,6 @@ bool TenantHandler::pingNextTenant()
     }
     bool tenantStatus = isTenantHome(tenants[currentTenantIndex]);
     currentTenantIndex++;
-
     return tenantStatus;
 }
 
