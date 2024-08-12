@@ -1,3 +1,4 @@
+#include <ESP32Servo.h>
 #include <Arduino.h>
 
 #include "env.h"
@@ -256,10 +257,10 @@ BLYNK_WRITE(V1)
     acSetTempMode(param.asInt());
 }
 
-// FAN SPEED (1/2/3/auto)
-BLYNK_WRITE(V2)
-{
-    int pinValue = param.asInt();
+// // FAN SPEED (1/2/3/auto)
+// BLYNK_WRITE(V2)
+// {
+//     int pinValue = param.asInt();
 
     fanSpeed = (FanSpeed)pinValue;
     remote.setFanSpeed(fanSpeed);
