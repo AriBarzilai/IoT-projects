@@ -1,10 +1,11 @@
-#ifndef ELECTRA_REMOTE_DATA_H
-#define ELECTRA_REMOTE_DATA_H
+#ifndef CONTROLLER_DATA_H
+#define CONTROLLER_DATA_H
 
 #include <stdint.h>
 #include <array>
 
-struct AcCommand {
+struct AcCommand
+{
     uint16_t headerMark;
     uint16_t headerSpace;
     uint16_t bitMark;
@@ -26,7 +27,7 @@ extern const AcCommand OFF_COLD_FAN2[TEMPERATURES];
 extern const AcCommand OFF_COLD_FAN3[TEMPERATURES];
 extern const AcCommand OFF_COLD_FANA[TEMPERATURES];
 
-extern const std::array<const AcCommand*, FAN_SPEEDS> ON_COLD;
-extern const std::array<const AcCommand*, FAN_SPEEDS> OFF_COLD;
+extern const std::array<const AcCommand *, FAN_SPEEDS> ON_COLD;
+extern const std::array<const AcCommand *, FAN_SPEEDS> OFF_COLD;
 
 #endif

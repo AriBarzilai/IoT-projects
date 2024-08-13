@@ -1,8 +1,8 @@
-#ifndef ELECTRA_REMOTE_H
-#define ELECTRA_REMOTE_H
+#ifndef AIR_CONDITIONER_H
+#define AIR_CONDITIONER_H
 
 #include <stdint.h>
-#include "electra_remote_data.h"
+#include "controllerData.h"
 
 enum class PowerState
 {
@@ -22,14 +22,19 @@ enum class FanSpeed
     FAN_AUTO = 4
 };
 
-class ElectraRemote
+class AirConditioner
 {
 public:
-    ElectraRemote();
+    AirConditioner();
     void setFanSpeed(FanSpeed speed);
     void setTemperature(uint8_t temp);
     void setPowerState(PowerState state);
     void setTemperatureMode(TemperatureMode mode);
+
+    PowerState getPowerState() const { return powerState; }
+    TemperatureMode getTemperatureMode() const { return temperatureMode; }
+    FanSpeed getFanSpeed() const { return fanSpeed; }
+    uint8_t getTemperature() const { return temperature; }
 
 private:
     PowerState powerState;
@@ -41,4 +46,4 @@ private:
     void transmitIRCommand(const AcCommand &command);
 };
 
-#endif // ELECTRA_REMOTE_H
+#endif // AIR_CONDITIONER_H
