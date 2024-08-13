@@ -11,54 +11,57 @@ void TenantHandler::initTenants()
 }
 
 void TenantHandler::addTenant(const char *name, IPAddress ip)
-{
+{   
+    message = "";
     for (auto &tenant : tenants)
     {
         if (strcmp(tenant.tenantName, name) == 0)
-        {
-            Serial.print("Overwriting tenant: ");
-            Serial.println(name);
+        {   
+            message += "Overwriting tenant: " + String(name) + "\n";
             tenant.tenant_ip = ip;
             return;
         }
     }
-    Serial.print("Adding tenant: ");
-    Serial.println(name);
+    message += "Adding tenant: " + String(name) + "\n";
+    Serial.print(message);
     tenants.emplace_back(name, ip);
+    
 }
 
 void TenantHandler::removeTenant(const char *name)
-{
+{   
+    message = "";
     auto it = std::find_if(tenants.begin(), tenants.end(), [name](const Tenant &c)
                            { return strcmp(c.tenantName, name) == 0; });
     if (it != tenants.end())
     {
-        Serial.print("Removing tenant");
+        message += "Removing tenant: ";
         tenants.erase(it);
     }
     else
     {
-        Serial.print("Remove failed: tenant not found");
+        message += "Remove failed: tenant not found";
     }
+    Serial.print(message);
 }
 
 bool TenantHandler::isTenantHome(Tenant &tenant)
-{
-    Serial.print("Pinging ");
-    Serial.print(tenant.tenantName);
-    Serial.print(": ");
+{   
+    message = "Pinging " + String(tenant.tenantName) + ": ";
+    bool isHome = false;
     // Determine if a tenant is home based on ping response
     if (Ping.ping(tenant.tenant_ip) > 0)
-    {
-        Serial.print(" At home");
+    {   
+        message += "At home";
         tenant.verifyAttempts = 0;
         if (!tenant.isHome)
         {
             tenantsHome++;
             tenant.isHome = true;
-            Serial.print(" (CHANGED)");
+            message += " (CHANGED)";
         }
-        Serial.println("");
+        message += "\n";
+        Serial.print(message);
         return true;
     }
     else if (tenant.isHome)

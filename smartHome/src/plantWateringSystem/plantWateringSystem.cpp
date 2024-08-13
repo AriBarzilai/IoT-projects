@@ -1,13 +1,13 @@
 #include "plantWateringSystem.h"
 
 plantWateringSystem::plantWateringSystem(int servoPin, int soil_sensor)
-    : servoPin(servoPin), soilSensorPin(soil_sensor) 
+    : servoPin(servoPin), soilSensorPin(soil_sensor) ,moistureThreshold(2000), wateringDuration(5000)
 {
     // initialize();
 }
 
 plantWateringSystem::plantWateringSystem()
-    : servoPin(23), soilSensorPin(34) , moistureThreshold(2000), wateringDuration(5000)
+    : servoPin(23), soilSensorPin(34) , moistureThreshold(2000), wateringDuration(2000)
 {
     // initialize();
 }
@@ -34,18 +34,14 @@ void plantWateringSystem::startWatering()
     }
 }
 
-void plantWateringSystem::updateMoistureSensor()
-{
-    soilMoistureValue = analogRead(soilSensorPin);
-}
-
 bool plantWateringSystem::needsWatering()
 {
     return soilMoistureValue > moistureThreshold;
 }
 
 void plantWateringSystem::update()
-{
+{   
+    soilMoistureValue = analogRead(soilSensorPin);
     if (isWatering && millis() - pumpIsOpen >= wateringDuration)
     {
         myservo.write(0); // close the valve (turn off the pump)
@@ -64,4 +60,9 @@ void plantWateringSystem::setMoistureThreshold(int threshold)
 {
     if (threshold > 0)
         moistureThreshold = threshold;
+}
+
+bool plantWateringSystem::isWatering()
+{
+    return isWatering;
 }
