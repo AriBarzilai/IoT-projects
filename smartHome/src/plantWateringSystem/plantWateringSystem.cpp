@@ -22,14 +22,15 @@ void plantWateringSystem::initialize()
     myservo.attach(servoPin, 500, 2400); // attaches the servo onto pin with adjusted pulse width
     myservo.write(0);                    // sets the servo to 0 degrees (closed)
     pinMode(soilSensorPin, INPUT);
+    isWateringFlag = false;
 }
 
 void plantWateringSystem::startWatering()
 {
-    if (!isWatering)
+    if (!isWateringFlag)
     {
         myservo.write(180); // open the valve (tourn on the pump)
-        isWatering = true;
+        isWateringFlag = true;
         pumpIsOpen = millis();
     }
 }
@@ -42,10 +43,10 @@ bool plantWateringSystem::needsWatering()
 void plantWateringSystem::update()
 {   
     soilMoistureValue = analogRead(soilSensorPin);
-    if (isWatering && millis() - pumpIsOpen >= wateringDuration)
+    if (isWateringFlag && millis() - pumpIsOpen >= wateringDuration)
     {
         myservo.write(0); // close the valve (turn off the pump)
-        isWatering = false;
+        isWateringFlag = false;
     }
     
 }
@@ -64,5 +65,5 @@ void plantWateringSystem::setMoistureThreshold(int threshold)
 
 bool plantWateringSystem::isWatering()
 {
-    return isWatering;
+    return isWateringFlag;
 }

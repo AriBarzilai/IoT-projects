@@ -63,13 +63,13 @@ public:
      * @brief Checks if the plant watering system is currently watering.
      * @return True if the system is watering, false otherwise.
      */
-    bool plantWateringSystem::isWatering();
+    bool isWatering();
 
 private:
     int servoPin;             ///< The pin number connected to the servo motor.
     int soilSensorPin;        ///< The pin number connected to the soil moisture sensor.
     Servo myservo;            ///< Servo object to control the servo motor.
-    bool isWatering = false;  ///< Flag to indicate if watering is in progress.
+    bool isWateringFlag;  ///< Flag to indicate if watering is in progress.
     unsigned long pumpIsOpen; ///< Timestamp when the pump was opened.
     int soilMoistureValue;    ///< Current value from the soil moisture sensor.
     int wateringDuration;     ///< Duration for which the watering should occur.
