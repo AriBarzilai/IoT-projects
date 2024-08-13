@@ -9,8 +9,10 @@
 #define PING_BEFORE_TENANTS 400000L // time before first tenant ping in milliseconds
 #define PING_ATTMEPTS 3             // number of attempts to ping a tenant before considering him not home
 
+
 struct Tenant
 {
+    String message;
     char *tenantName;       // name identifier for the tenant
     IPAddress tenant_ip;    // IMPORTANT: the ip address of the tenant must be static.
     bool isHome;            // true if tenant's ip is reachable when pinged
@@ -20,7 +22,8 @@ struct Tenant
 };
 
 class TenantHandler
-{
+{   
+    String message;
     std::vector<Tenant> tenants;
     int tenantsHome = 0;
     size_t currentTenantIndex = 0;

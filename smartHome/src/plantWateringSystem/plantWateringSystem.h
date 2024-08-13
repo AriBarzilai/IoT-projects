@@ -34,10 +34,6 @@ public:
      */
     void startWatering();
 
-    /**
-     * @brief Updates the soil moisture sensor value.
-     */
-    void updateMoistureSensor();
 
     /**
      * @brief Checks if the plant needs watering based on the moisture sensor value.
@@ -46,7 +42,8 @@ public:
     bool needsWatering();
 
     /**
-     * @brief Updates the system state, including checking the moisture sensor and controlling the watering process.
+     * @brief Updates the soil moisture sensor value and the system state,
+     *        including checking the moisture sensor and controlling the watering process.
      */
     void update();
 
@@ -62,15 +59,21 @@ public:
      */
     void setMoistureThreshold(int threshold);
 
+    /**
+     * @brief Checks if the plant watering system is currently watering.
+     * @return True if the system is watering, false otherwise.
+     */
+    bool plantWateringSystem::isWatering();
+
 private:
-    int servoPin;            ///< The pin number connected to the servo motor.
-    int soilSensorPin;       ///< The pin number connected to the soil moisture sensor.
-    Servo myservo;                ///< Servo object to control the servo motor.
-    bool isWatering = false;      ///< Flag to indicate if watering is in progress.
-    unsigned long pumpIsOpen;     ///< Timestamp when the pump was opened.
-    int soilMoistureValue;        ///< Current value from the soil moisture sensor.
-    int wateringDuration ; ///< Duration for which the watering should occur.
-    int moistureThreshold ; ///< Moisture threshold below which the plant needs watering.
+    int servoPin;             ///< The pin number connected to the servo motor.
+    int soilSensorPin;        ///< The pin number connected to the soil moisture sensor.
+    Servo myservo;            ///< Servo object to control the servo motor.
+    bool isWatering = false;  ///< Flag to indicate if watering is in progress.
+    unsigned long pumpIsOpen; ///< Timestamp when the pump was opened.
+    int soilMoistureValue;    ///< Current value from the soil moisture sensor.
+    int wateringDuration;     ///< Duration for which the watering should occur.
+    int moistureThreshold;    ///< Moisture threshold below which the plant needs watering.
 };
 
 #endif // PLANT_WATERING_SYSTEM_H

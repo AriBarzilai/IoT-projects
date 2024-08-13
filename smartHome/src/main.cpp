@@ -4,6 +4,7 @@
 #include "env.h"
 #include "electraRemote\electraRemote.h"
 #include "presenceDetection\tenantHandler.h"
+#include "plantWateringSystem\plantWateringSystem.h"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -28,6 +29,9 @@ bool DEBUG_MODE = true;
 char ssid[] = WIFI_SSID; // your network SSID (name)
 char pass[] = WIFI_PASS;
 
+plantWateringSystem plant; 
+bool plantWatering = false;
+
 ElectraRemote remote;
 BlynkTimer timer;
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -40,6 +44,8 @@ int acTemperature;
 
 int currentTimerID;
 
+bool isHome = false;
+
 void call_controlClimate();
 void call_plantControl();
 void getRoomTemp();
@@ -51,7 +57,8 @@ void acSetTemperature(int pinValue);
 void setup()
 {
     Serial.begin(9600);
-
+    plant = plantWateringSystem();
+    plant.initialize();
     remote = ElectraRemote();
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
     dht.begin();
@@ -65,11 +72,11 @@ double interval = 1000; // time between each check of light sensor
 unsigned long currTime = -interval;
 
 void loop()
-{
+{   
+    plant.update();
     Blynk.run();
-    timer.run();
+    timer.run();   
 }
-int num = 10;
 
 float humidity;
 float temperature;
@@ -80,17 +87,22 @@ void getRoomTemp()
     double tempT = dht.readTemperature();
     if (!isnan(tempH) && !isnan(tempT))
     {
-        Serial.println("CLIMATE DETECTION");
+       
         humidity = tempH;
         temperature = tempT;
         aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
         Blynk.virtualWrite(V5, aT);
-        Serial.print("Room temp: ");
-        Serial.println(aT);
+        
+        
 
         timer.deleteTimer(currentTimerID);
-        Serial.println("PRESENCE DETECTION");
+        
         currentTimerID = timer.setInterval(PING_BETWEEN_TENANTS, call_ping);
+
+        Serial.println("CLIMATE DETECTION");
+        Serial.print("Room temp: ");
+        Serial.println(aT);
+        Serial.println("PRESENCE DETECTION");
     }
 }
 
@@ -203,11 +215,22 @@ void call_controlClimate()
 }
 
 void call_plantControl()
-{
+{   
     // control the plants
     Serial.println("PLANT CONTROL");
-    timer.deleteTimer(currentTimerID);
-    currentTimerID = timer.setInterval(3000L, getRoomTemp);
+    
+    if (plant.needsWatering() || plantWatering)
+    {   
+        Serial.println("watering the plant");
+        plantWatering = false;
+        plant.startWatering();  
+    }
+    if(!plant.needsWatering())
+    {
+        timer.deleteTimer(currentTimerID);
+        currentTimerID = timer.setInterval(3000L, getRoomTemp);
+    }
+    
 }
 
 void acSetPwr(int pinValue)
@@ -257,10 +280,10 @@ BLYNK_WRITE(V1)
     acSetTempMode(param.asInt());
 }
 
-// // FAN SPEED (1/2/3/auto)
-// BLYNK_WRITE(V2)
-// {
-//     int pinValue = param.asInt();
+// FAN SPEED (1/2/3/auto)
+BLYNK_WRITE(V2)
+{
+    int pinValue = param.asInt();
 
     fanSpeed = (FanSpeed)pinValue;
     remote.setFanSpeed(fanSpeed);
@@ -289,5 +312,13 @@ BLYNK_WRITE(V1)
 BLYNK_WRITE(V3)
 {
     Serial.print("MANUAL: ");
-    int pinValue = param.asInt();
+    acSetTemperature(param.asInt());
+}
+
+
+// MANUAL PLANT WATERING
+BLYNK_WRITE(V6)
+{
+    plantWatering = true;
+    Serial.println("MANUAL: Plant watering started");
 }
