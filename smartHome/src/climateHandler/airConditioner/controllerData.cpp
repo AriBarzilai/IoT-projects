@@ -1,4 +1,4 @@
-#include "electra_remote_data.h"
+#include "controllerData.h"
 
 const AcCommand OFF_COLD_FAN1[TEMPERATURES] = {
     {9000, 4550, 550, 1750, 550, {0x20006020F747C3, 0xA201000000}},
