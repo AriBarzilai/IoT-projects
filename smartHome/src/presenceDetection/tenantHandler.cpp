@@ -11,25 +11,24 @@ void TenantHandler::initTenants()
 }
 
 void TenantHandler::addTenant(const char *name, IPAddress ip)
-{   
+{
     message = "";
     for (auto &tenant : tenants)
     {
         if (strcmp(tenant.tenantName, name) == 0)
-        {   
+        {
             message += "Overwriting tenant: " + String(name) + "\n";
             tenant.tenant_ip = ip;
             return;
         }
     }
     message += "Adding tenant: " + String(name) + "\n";
-    Serial.print(message);
+    DEBUG_PRINT(message);
     tenants.emplace_back(name, ip);
-    
 }
 
 void TenantHandler::removeTenant(const char *name)
-{   
+{
     message = "";
     auto it = std::find_if(tenants.begin(), tenants.end(), [name](const Tenant &c)
                            { return strcmp(c.tenantName, name) == 0; });
@@ -42,16 +41,16 @@ void TenantHandler::removeTenant(const char *name)
     {
         message += "Remove failed: tenant not found";
     }
-    Serial.print(message);
+    DEBUG_PRINT(message);
 }
 
 bool TenantHandler::isTenantHome(Tenant &tenant)
-{   
+{
     message = "Pinging " + String(tenant.tenantName) + ": ";
     bool isHome = false;
     // Determine if a tenant is home based on ping response
     if (Ping.ping(tenant.tenant_ip) > 0)
-    {   
+    {
         message += "At home";
         tenant.verifyAttempts = 0;
         if (!tenant.isHome)
@@ -61,27 +60,27 @@ bool TenantHandler::isTenantHome(Tenant &tenant)
             message += " (CHANGED)";
         }
         message += "\n";
-        Serial.print(message);
+        DEBUG_PRINT(message);
         return true;
     }
     else if (tenant.isHome)
     {
         tenant.verifyAttempts++;
-        Serial.print(" Unreachable");
+        DEBUG_PRINT(" Unreachable");
         if (tenant.verifyAttempts >= PING_ATTMEPTS)
         {
             tenant.isHome = false;
             tenant.verifyAttempts = 0;
             tenantsHome--;
-            Serial.println(" (NOW ABSENT)");
+            DEBUG_PRINTLN(" (NOW ABSENT)");
             return false;
         }
     }
     else
     {
-        Serial.print(" Absent");
+        DEBUG_PRINT(" Absent");
     }
-    Serial.println("");
+    DEBUG_PRINTLN("");
     return tenant.isHome;
 }
 

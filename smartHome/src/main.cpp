@@ -24,12 +24,10 @@ enum State
 };
 State currState = DETECT_CLIMATE;
 
-bool DEBUG_MODE = true;
-
 char ssid[] = WIFI_SSID; // your network SSID (name)
 char pass[] = WIFI_PASS;
 
-plantWateringSystem plant; 
+plantWateringSystem plant;
 bool plantWatering = false;
 
 ElectraRemote remote;
@@ -65,17 +63,17 @@ void setup()
     tenantHandler.initTenants();
 
     currentTimerID = timer.setInterval(3000L, getRoomTemp);
-    Serial.println("BEGIN SMART HOME SYSTEM");
+    DEBUG_PRINTLN("BEGIN SMART HOME SYSTEM");
 }
 
 double interval = 1000; // time between each check of light sensor
 unsigned long currTime = -interval;
 
 void loop()
-{   
+{
     plant.update();
     Blynk.run();
-    timer.run();   
+    timer.run();
 }
 
 float humidity;
@@ -87,22 +85,20 @@ void getRoomTemp()
     double tempT = dht.readTemperature();
     if (!isnan(tempH) && !isnan(tempT))
     {
-       
+
         humidity = tempH;
         temperature = tempT;
         aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
         Blynk.virtualWrite(V5, aT);
-        
-        
 
         timer.deleteTimer(currentTimerID);
-        
+
         currentTimerID = timer.setInterval(PING_BETWEEN_TENANTS, call_ping);
 
-        Serial.println("CLIMATE DETECTION");
-        Serial.print("Room temp: ");
-        Serial.println(aT);
-        Serial.println("PRESENCE DETECTION");
+        DEBUG_PRINTLN("CLIMATE DETECTION");
+        DEBUG_PRINT("Room temp: ");
+        DEBUG_PRINTLN(aT);
+        DEBUG_PRINTLN("PRESENCE DETECTION");
     }
 }
 
@@ -132,14 +128,15 @@ long climateControlCooldown = 1200000L;
 long lastClimateOverride = -climateControlCooldown;
 void call_controlClimate()
 {
-    Serial.println("AUTO CLIMATE CONTROL");
+    DEBUG_PRINT("AUTO CLIMATE CONTROL");
     if (millis() - lastClimateOverride < climateControlCooldown)
     {
-        Serial.println("Skip");
+        DEBUG_PRINTLN(" (OVERRIDEN)");
         timer.deleteTimer(currentTimerID);
         currentTimerID = timer.setInterval(3000L, call_plantControl);
         return;
     }
+    DEBUG_PRINTLN("");
 
     if (tenantHandler.getHomeTenantsCount() == 0)
     {
@@ -155,58 +152,22 @@ void call_controlClimate()
         {
             if (tempMode == TemperatureMode::COLD)
             {
-                if (aT <= 10) // switch to heat mode
-                {
-                    Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
-                    acSetTempMode((int)TemperatureMode::HOT);
-                }
-                else if (aT <= 18) // turn off the AC
-                {
-                    Blynk.virtualWrite(V0, (int)PowerState::OFF);
-                    acSetPwr((int)PowerState::OFF);
-                }
-                else
-                {
-                    Serial.println("AC cooling still necessary");
-                }
+                climateHandleCold();
             }
             else // TEMPMODE HOT
             {
-                if (aT >= 27) // switch to cold mode
-                {
-                    Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
-                    acSetTempMode((int)TemperatureMode::COLD);
-                }
-                else if (aT >= 22) // turn off the AC
-                {
-                    Blynk.virtualWrite(V0, (int)PowerState::OFF);
-                    acSetPwr((int)PowerState::OFF);
-                }
-                else
-                {
-                    Serial.println("AC heating still necessary");
-                }
+                climateHandleHeat();
             }
         }
-        else
-        {                 // POWER OFF
+        else // POWER OFF
+        {
             if (aT <= 15) // turn on the AC on heat mode
             {
-                Blynk.virtualWrite(V0, (int)PowerState::ON);
-                Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
-                Blynk.virtualWrite(V3, 25);
-                acSetPwr((int)PowerState::ON);
-                acSetTempMode((int)TemperatureMode::HOT);
-                acSetTemperature(24);
+                acPredefHeat();
             }
             else if (aT >= 25) // turn on the AC on cold mode
             {
-                Blynk.virtualWrite(V0, (int)PowerState::ON);
-                Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
-                Blynk.virtualWrite(V3, 16);
-                acSetPwr((int)PowerState::ON);
-                acSetTempMode((int)TemperatureMode::COLD);
-                acSetTemperature(16);
+                acPredefCold();
             }
         }
     }
@@ -215,68 +176,119 @@ void call_controlClimate()
 }
 
 void call_plantControl()
-{   
+{
     // control the plants
-    Serial.println("PLANT CONTROL");
-    
+    DEBUG_PRINTLN("PLANT CONTROL");
+
     if (plant.needsWatering() || plantWatering)
-    {   
-        Serial.println("watering the plant");
+    {
+        DEBUG_PRINTLN("watering the plant");
         plantWatering = false;
-        plant.startWatering();  
+        plant.startWatering();
     }
-    if(!plant.needsWatering())
+    if (!plant.needsWatering())
     {
         timer.deleteTimer(currentTimerID);
         currentTimerID = timer.setInterval(3000L, getRoomTemp);
     }
-    
 }
 
 void acSetPwr(int pinValue)
 {
     pwr = (PowerState)pinValue;
     remote.setPowerState(pwr);
-    if (DEBUG_MODE)
-    {
-        Serial.print("Power: ");
-        Serial.println(pwr == PowerState::ON ? "ON" : "OFF");
-    }
+    DEBUG_PRINT("Power: ");
+    DEBUG_PRINTLN(pwr == PowerState::ON ? "ON" : "OFF");
 }
 
 void acSetTempMode(int pinValue)
 {
     tempMode = (TemperatureMode)pinValue;
     remote.setTemperatureMode(tempMode);
-    if (DEBUG_MODE)
-    {
-        Serial.print("Temperature Mode: ");
-        Serial.println(tempMode == TemperatureMode::COLD ? "COLD" : "HOT");
-    }
+    DEBUG_PRINT("Temperature Mode: ");
+    DEBUG_PRINTLN(tempMode == TemperatureMode::COLD ? "COLD" : "HOT");
 }
 
 void acSetTemperature(int pinValue)
 {
     acTemperature = pinValue;
     remote.setTemperature(acTemperature);
-    if (DEBUG_MODE)
+    DEBUG_PRINT("Temperature: ");
+    DEBUG_PRINTLN(acTemperature);
+}
+
+// Sets the AC to predefined settings for hot mode
+void acPredefHeat()
+{
+    Blynk.virtualWrite(V0, (int)PowerState::ON);
+    Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
+    Blynk.virtualWrite(V3, 25);
+    acSetPwr((int)PowerState::ON);
+    acSetTempMode((int)TemperatureMode::HOT);
+    acSetTemperature(24);
+}
+
+void acPredefCold()
+{
+    Blynk.virtualWrite(V0, (int)PowerState::ON);
+    Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
+    Blynk.virtualWrite(V3, 16);
+    acSetPwr((int)PowerState::ON);
+    acSetTempMode((int)TemperatureMode::COLD);
+    acSetTemperature(16);
+}
+
+// Handles the climate control when the AC is on and temperature mode is on cold
+void climateHandleCold()
+{
+    if (aT <= 10) // switch to heat mode
     {
-        Serial.print("Temperature: ");
-        Serial.println(acTemperature);
+        Blynk.virtualWrite(V1, (int)TemperatureMode::HOT);
+        acSetTempMode((int)TemperatureMode::HOT);
+    }
+    else if (aT <= 18) // turn off the AC
+    {
+        Blynk.virtualWrite(V0, (int)PowerState::OFF);
+        acSetPwr((int)PowerState::OFF);
+    }
+    else
+    {
+        DEBUG_PRINTLN("AC cooling still necessary");
+    }
+}
+
+// Handles the climate control when the AC is on and temperature mode is on heat
+void climateHandleHeat()
+{
+    if (aT >= 27) // switch to cold mode
+    {
+        Blynk.virtualWrite(V1, (int)TemperatureMode::COLD);
+        acSetTempMode((int)TemperatureMode::COLD);
+    }
+    else if (aT >= 22) // turn off the AC
+    {
+        Blynk.virtualWrite(V0, (int)PowerState::OFF);
+        acSetPwr((int)PowerState::OFF);
+    }
+    else
+    {
+        DEBUG_PRINTLN("AC heating still necessary");
     }
 }
 
 // POWER STATE (on/off)
 BLYNK_WRITE(V0)
 {
-    Serial.print("MANUAL: ");
+    DEBUG_PRINT("MANUAL: ");
+    lastClimateOverride = millis();
     acSetPwr(param.asInt());
 }
 
 // TEMPERATURE MODE (cold/hot)
 BLYNK_WRITE(V1)
 {
-    Serial.print("MANUAL: ");
+    DEBUG_PRINT("MANUAL: ");
+    lastClimateOverride = millis();
     acSetTempMode(param.asInt());
 }
 
@@ -287,22 +299,22 @@ BLYNK_WRITE(V2)
 
     fanSpeed = (FanSpeed)pinValue;
     remote.setFanSpeed(fanSpeed);
-    if (DEBUG_MODE)
+    if (DEBUG)
     {
-        Serial.print("Fan Speed: ");
+        DEBUG_PRINT("Fan Speed: ");
         switch (fanSpeed)
         {
         case FanSpeed::FAN_1:
-            Serial.println("1");
+            DEBUG_PRINTLN("1");
             break;
         case FanSpeed::FAN_2:
-            Serial.println("2");
+            DEBUG_PRINTLN("2");
             break;
         case FanSpeed::FAN_3:
-            Serial.println("3");
+            DEBUG_PRINTLN("3");
             break;
         case FanSpeed::FAN_AUTO:
-            Serial.println("AUTO");
+            DEBUG_PRINTLN("AUTO");
             break;
         }
     }
@@ -311,14 +323,14 @@ BLYNK_WRITE(V2)
 // TEMPERATURE (16-30)
 BLYNK_WRITE(V3)
 {
-    Serial.print("MANUAL: ");
+    DEBUG_PRINT("MANUAL: ");
+    lastClimateOverride = millis();
     acSetTemperature(param.asInt());
 }
-
 
 // MANUAL PLANT WATERING
 BLYNK_WRITE(V6)
 {
+    DEBUG_PRINTLN("MANUAL: Plant watering started");
     plantWatering = true;
-    Serial.println("MANUAL: Plant watering started");
 }
