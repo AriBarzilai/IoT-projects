@@ -2,7 +2,6 @@
 #include <BlynkSimpleEsp32.h>
 #include <Arduino.h>
 
-
 #include "climateHandler\climateControl.h"
 #include "presenceDetection\tenantHandler.h"
 #include "plantWateringSystem\plantWateringSystem.h"
@@ -42,7 +41,7 @@ void setVirtualPin(int pin, int value);
 
 void setup()
 {
-   
+
     Serial.begin(9600);
     plant = plantWateringSystem();
     plant.initialize();
@@ -64,7 +63,6 @@ void loop()
     Blynk.run();
     timer.run();
 }
-
 
 void setVirtualPin(int pin, int value)
 {
@@ -107,10 +105,12 @@ void call_ping()
             // switch to another state only after finished pinging all tenants
             pingCooldown = PING_BEFORE_TENANTS;
             lastTenantPing = millis();
-            switchToState(pState::CONTROL_CLIMATE);
         }
     }
-   
+    else
+    {
+        switchToState(pState::CONTROL_CLIMATE);
+    }
 }
 
 long climateControlCooldown = 1200000L;
