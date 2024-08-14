@@ -54,16 +54,16 @@ void AirConditioner::setPowerState(PowerState state)
 {
     powerState = state;
     transmitCurrentState();
-    DEBUG_PRINT("Power: ");
-    DEBUG_PRINTLN(powerState == PowerState::ON ? "ON" : "OFF");
+    PDEBUG_PRINT("Power: ");
+    PDEBUG_PRINTLN(powerState == PowerState::ON ? "ON" : "OFF");
 }
 
 void AirConditioner::setTemperatureMode(TemperatureMode mode)
 {
     temperatureMode = mode;
     transmitCurrentState();
-    DEBUG_PRINT("Temperature Mode: ");
-    DEBUG_PRINTLN(temperatureMode == TemperatureMode::COLD ? "COLD" : "HOT");
+    PDEBUG_PRINT("Temperature Mode: ");
+    PDEBUG_PRINTLN(temperatureMode == TemperatureMode::COLD ? "COLD" : "HOT");
 }
 
 void AirConditioner::setFanSpeed(FanSpeed speed)
@@ -74,22 +74,22 @@ void AirConditioner::setFanSpeed(FanSpeed speed)
         transmitCurrentState();
     }
 
-    if (DEBUG)
+    if (PDEBUG)
     {
-        DEBUG_PRINT("Fan Speed: ");
+        PDEBUG_PRINT("Fan Speed: ");
         switch (fanSpeed)
         {
         case FanSpeed::FAN_1:
-            DEBUG_PRINTLN("1");
+            PDEBUG_PRINTLN("1");
             break;
         case FanSpeed::FAN_2:
-            DEBUG_PRINTLN("2");
+            PDEBUG_PRINTLN("2");
             break;
         case FanSpeed::FAN_3:
-            DEBUG_PRINTLN("3");
+            PDEBUG_PRINTLN("3");
             break;
         case FanSpeed::FAN_AUTO:
-            DEBUG_PRINTLN("AUTO");
+            PDEBUG_PRINTLN("AUTO");
             break;
         }
     }
@@ -102,6 +102,6 @@ void AirConditioner::setTemperature(uint8_t temp)
         temperature = temp;
         transmitCurrentState();
     }
-    DEBUG_PRINT("Temperature: ");
-    DEBUG_PRINTLN(temperature);
+    PDEBUG_PRINT("Temperature: ");
+    PDEBUG_PRINTLN(temperature);
 }

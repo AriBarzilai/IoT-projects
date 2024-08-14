@@ -2,6 +2,9 @@
 #define CLIMATE_CONTROL_H
 
 #include "airConditioner/airConditioner.h"
+#include "env.h"
+
+extern void setVirtualPin(int pin, int value);
 
 class ClimateControl
 {

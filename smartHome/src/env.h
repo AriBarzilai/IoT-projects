@@ -1,5 +1,0 @@
-// #define BLYNK_TEMPLATE_ID "TMPL6iDeYqVZn"
-// #define BLYNK_TEMPLATE_NAME "SmartHome"
-// #define BLYNK_AUTH_TOKEN "DjhUtGEx1XjIda41tiuOXP5WWmHD4_Xv"
-// #define SSID "crib"
-// #define PASS "135792468"

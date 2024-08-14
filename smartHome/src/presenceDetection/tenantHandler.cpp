@@ -23,7 +23,7 @@ void TenantHandler::addTenant(const char *name, IPAddress ip)
         }
     }
     message += "Adding tenant: " + String(name) + "\n";
-    DEBUG_PRINT(message);
+    PDEBUG_PRINT(message);
     tenants.emplace_back(name, ip);
 }
 
@@ -41,7 +41,7 @@ void TenantHandler::removeTenant(const char *name)
     {
         message += "Remove failed: tenant not found";
     }
-    DEBUG_PRINT(message);
+    PDEBUG_PRINT(message);
 }
 
 bool TenantHandler::isTenantHome(Tenant &tenant)
@@ -60,27 +60,27 @@ bool TenantHandler::isTenantHome(Tenant &tenant)
             message += " (CHANGED)";
         }
         message += "\n";
-        DEBUG_PRINT(message);
+        PDEBUG_PRINT(message);
         return true;
     }
     else if (tenant.isHome)
     {
         tenant.verifyAttempts++;
-        DEBUG_PRINT(" Unreachable");
+        PDEBUG_PRINT(" Unreachable");
         if (tenant.verifyAttempts >= PING_ATTMEPTS)
         {
             tenant.isHome = false;
             tenant.verifyAttempts = 0;
             tenantsHome--;
-            DEBUG_PRINTLN(" (NOW ABSENT)");
+            PDEBUG_PRINTLN(" (NOW ABSENT)");
             return false;
         }
     }
     else
     {
-        DEBUG_PRINT(" Absent");
+        PDEBUG_PRINT(" Absent");
     }
-    DEBUG_PRINTLN("");
+    PDEBUG_PRINTLN("");
     return tenant.isHome;
 }
 

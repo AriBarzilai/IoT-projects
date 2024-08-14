@@ -1,21 +1,22 @@
-#include <ESP32Servo.h>
+#include "env.h"
+#include <BlynkSimpleEsp32.h>
 #include <Arduino.h>
 
-#include "env.h"
+
 #include "climateHandler\climateControl.h"
 #include "presenceDetection\tenantHandler.h"
 #include "plantWateringSystem\plantWateringSystem.h"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <BlynkSimpleEsp32.h>
+
 #include <DHT.h>
 
 // Temperature sensor
 #define DHT_PIN 15
 #define DHT_TYPE DHT22
 
-State currState = DETECT_CLIMATE;
+pState currState = DETECT_CLIMATE;
 
 char ssid[] = WIFI_SSID; // your network SSID (name)
 char pass[] = WIFI_PASS;
@@ -36,10 +37,12 @@ void call_controlClimate();
 void call_plantControl();
 void getRoomTemp();
 void call_ping();
-void switchToState(State newState);
+void switchToState(pState newState);
+void setVirtualPin(int pin, int value);
 
 void setup()
 {
+   
     Serial.begin(9600);
     plant = plantWateringSystem();
     plant.initialize();
@@ -48,8 +51,8 @@ void setup()
     tenantHandler.initTenants();
     climateControl = ClimateControl();
 
-    switchToState(State::DETECT_CLIMATE);
-    DEBUG_PRINTLN("BEGIN SMART HOME SYSTEM");
+    switchToState(pState::DETECT_CLIMATE);
+    PDEBUG_PRINTLN("BEGIN SMART HOME SYSTEM");
 }
 
 double interval = 1000; // time between each check of light sensor
@@ -60,6 +63,12 @@ void loop()
     plant.update();
     Blynk.run();
     timer.run();
+}
+
+
+void setVirtualPin(int pin, int value)
+{
+    Blynk.virtualWrite(pin, value);
 }
 
 float humidity;
@@ -77,12 +86,12 @@ void getRoomTemp()
         aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
         Blynk.virtualWrite(V5, aT);
 
-        DEBUG_PRINTLN("CLIMATE DETECTION");
-        DEBUG_PRINT("Room temp: ");
-        DEBUG_PRINTLN(aT);
-        DEBUG_PRINTLN("PRESENCE DETECTION");
+        PDEBUG_PRINTLN("CLIMATE DETECTION");
+        PDEBUG_PRINT("Room temp: ");
+        PDEBUG_PRINTLN(aT);
+        PDEBUG_PRINTLN("PRESENCE DETECTION");
 
-        switchToState(State::DETECT_PRESENCE);
+        switchToState(pState::DETECT_PRESENCE);
     }
 }
 
@@ -95,25 +104,27 @@ void call_ping()
         tenantHandler.pingNextTenant();
         if (tenantHandler.allTenantsPinged())
         {
+            // switch to another state only after finished pinging all tenants
             pingCooldown = PING_BEFORE_TENANTS;
             lastTenantPing = millis();
+            switchToState(pState::CONTROL_CLIMATE);
         }
     }
-    switchToState(State::CONTROL_CLIMATE);
+   
 }
 
 long climateControlCooldown = 1200000L;
 long lastClimateOverride = -climateControlCooldown;
 void call_controlClimate()
 {
-    DEBUG_PRINT("AUTO CLIMATE CONTROL");
+    PDEBUG_PRINT("AUTO CLIMATE CONTROL");
     if (millis() - lastClimateOverride < climateControlCooldown)
     {
-        DEBUG_PRINTLN(" (OVERRIDEN)");
-        switchToState(State::CONTROL_PLANTS);
+        PDEBUG_PRINTLN(" (OVERRIDEN)");
+        switchToState(pState::CONTROL_PLANTS);
         return;
     }
-    DEBUG_PRINTLN("");
+    PDEBUG_PRINTLN("");
 
     climateControl.updateTemperature(aT);
     if (tenantHandler.getHomeTenantsCount() == 0)
@@ -124,27 +135,27 @@ void call_controlClimate()
     {
         climateControl.handleClimate();
     }
-    switchToState(State::CONTROL_PLANTS);
+    switchToState(pState::CONTROL_PLANTS);
 }
 
 void call_plantControl()
 {
     // control the plants
-    DEBUG_PRINTLN("PLANT CONTROL");
+    PDEBUG_PRINTLN("PLANT CONTROL");
 
     if (plant.needsWatering() || manualWaterOverride)
     {
-        DEBUG_PRINTLN("Watering plant");
+        PDEBUG_PRINTLN("Watering plant");
         manualWaterOverride = false;
         plant.startWatering();
     }
     if (!plant.isWatering())
     {
-        switchToState(State::DETECT_CLIMATE);
+        switchToState(pState::DETECT_CLIMATE);
     }
 }
 
-void switchToState(State newState)
+void switchToState(pState newState)
 {
     currState = newState;
     timer.deleteTimer(currentTimerID);
@@ -169,7 +180,7 @@ void switchToState(State newState)
 // POWER STATE (on/off)
 BLYNK_WRITE(PWR_VPIN)
 {
-    DEBUG_PRINT("MANUAL: ");
+    PDEBUG_PRINT("MANUAL: ");
     lastClimateOverride = millis();
     climateControl.airConditioner.setPowerState((PowerState)param.asInt());
 }
@@ -177,7 +188,7 @@ BLYNK_WRITE(PWR_VPIN)
 // TEMPERATURE MODE (cold/hot)
 BLYNK_WRITE(TMP_MD_VPIN)
 {
-    DEBUG_PRINT("MANUAL: ");
+    PDEBUG_PRINT("MANUAL: ");
     lastClimateOverride = millis();
     climateControl.airConditioner.setTemperatureMode((TemperatureMode)param.asInt());
 }
@@ -185,7 +196,7 @@ BLYNK_WRITE(TMP_MD_VPIN)
 // FAN SPEED (1/2/3/auto)
 BLYNK_WRITE(F_SPD_VPIN)
 {
-    DEBUG_PRINT("MANUAL: ");
+    PDEBUG_PRINT("MANUAL: ");
     lastClimateOverride = millis();
     climateControl.airConditioner.setFanSpeed((FanSpeed)param.asInt());
 }
@@ -193,7 +204,7 @@ BLYNK_WRITE(F_SPD_VPIN)
 // TEMPERATURE (16-30)
 BLYNK_WRITE(TMP_VPIN)
 {
-    DEBUG_PRINT("MANUAL: ");
+    PDEBUG_PRINT("MANUAL: ");
     lastClimateOverride = millis();
     climateControl.airConditioner.setTemperature(param.asInt());
 }
@@ -201,6 +212,6 @@ BLYNK_WRITE(TMP_VPIN)
 // MANUAL PLANT WATERING
 BLYNK_WRITE(PLNT_VPIN)
 {
-    DEBUG_PRINTLN("MANUAL: Plant watering started");
+    PDEBUG_PRINTLN("MANUAL: Plant watering started");
     manualWaterOverride = true;
 }

@@ -1,6 +1,5 @@
 #include "climateControl.h"
 #include "../env.h"
-#include <BlynkSimpleEsp32.h>
 
 ClimateControl::ClimateControl()
 {
@@ -16,7 +15,7 @@ void ClimateControl::onHouseEmpty()
 {
     if (airConditioner.getPowerState() == PowerState::ON) // turn off AC
     {
-        Blynk.virtualWrite(PWR_VPIN, (int)PowerState::OFF);
+        setVirtualPin(PWR_VPIN, (int)PowerState::OFF);
         airConditioner.setPowerState(PowerState::OFF);
     }
 }
@@ -25,17 +24,17 @@ void ClimateControl::onColdMode()
 {
     if (currTemp <= 10) // switch to heat mode
     {
-        Blynk.virtualWrite(TMP_MD_VPIN, (int)TemperatureMode::HOT);
+        setVirtualPin(TMP_MD_VPIN, (int)TemperatureMode::HOT);
         airConditioner.setTemperatureMode(TemperatureMode::HOT);
     }
     else if (currTemp <= 18) // turn off the AC
     {
-        Blynk.virtualWrite(PWR_VPIN, (int)PowerState::OFF);
+        setVirtualPin(PWR_VPIN, (int)PowerState::OFF);
         airConditioner.setPowerState(PowerState::OFF);
     }
     else
     {
-        DEBUG_PRINTLN("AC cooling still necessary");
+        PDEBUG_PRINTLN("AC cooling still necessary");
     }
 }
 
@@ -43,17 +42,17 @@ void ClimateControl::onHeatMode()
 {
     if (currTemp >= 27) // switch to cold mode
     {
-        Blynk.virtualWrite(TMP_MD_VPIN, (int)TemperatureMode::COLD);
+        setVirtualPin(TMP_MD_VPIN, (int)TemperatureMode::COLD);
         airConditioner.setTemperatureMode(TemperatureMode::COLD);
     }
     else if (currTemp >= 22) // turn off the AC
     {
-        Blynk.virtualWrite(PWR_VPIN, (int)PowerState::OFF);
+        setVirtualPin(PWR_VPIN, (int)PowerState::OFF);
         airConditioner.setPowerState(PowerState::OFF);
     }
     else
     {
-        DEBUG_PRINTLN("AC heating still necessary");
+        PDEBUG_PRINTLN("AC heating still necessary");
     }
 }
 
@@ -85,9 +84,9 @@ void ClimateControl::handleClimate()
 
 void ClimateControl::setHotClimate()
 {
-    Blynk.virtualWrite(PWR_VPIN, (int)PowerState::ON);
-    Blynk.virtualWrite(TMP_MD_VPIN, (int)TemperatureMode::HOT);
-    Blynk.virtualWrite(TMP_VPIN, 24);
+    setVirtualPin(PWR_VPIN, (int)PowerState::ON);
+    setVirtualPin(TMP_MD_VPIN, (int)TemperatureMode::HOT);
+    setVirtualPin(TMP_VPIN, 24);
     airConditioner.setPowerState(PowerState::ON);
     airConditioner.setTemperatureMode(TemperatureMode::HOT);
     airConditioner.setTemperature(24);
@@ -95,9 +94,9 @@ void ClimateControl::setHotClimate()
 
 void ClimateControl::setColdClimate()
 {
-    Blynk.virtualWrite(PWR_VPIN, (int)PowerState::ON);
-    Blynk.virtualWrite(TMP_MD_VPIN, (int)TemperatureMode::COLD);
-    Blynk.virtualWrite(TMP_VPIN, 16);
+    setVirtualPin(PWR_VPIN, (int)PowerState::ON);
+    setVirtualPin(TMP_MD_VPIN, (int)TemperatureMode::COLD);
+    setVirtualPin(TMP_VPIN, 16);
     airConditioner.setPowerState(PowerState::ON);
     airConditioner.setTemperatureMode(TemperatureMode::COLD);
     airConditioner.setTemperature(16);
