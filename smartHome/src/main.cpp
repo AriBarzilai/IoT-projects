@@ -14,6 +14,7 @@
 // Temperature sensor
 #define DHT_PIN 15
 #define DHT_TYPE DHT22
+#define UPDATE_INTERVAL_PLANT_DATA 2000
 
 pState currState = DETECT_CLIMATE;
 
@@ -43,13 +44,16 @@ void setup()
 {
 
     Serial.begin(9600);
+    
+    
+    climateControl = ClimateControl();
     plant = plantWateringSystem();
+
     plant.initialize();
     Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
     dht.begin();
     tenantHandler.initTenants();
-    climateControl = ClimateControl();
-
+    
     switchToState(pState::DETECT_CLIMATE);
     PDEBUG_PRINTLN("BEGIN SMART HOME SYSTEM");
 }
@@ -64,21 +68,15 @@ void loop()
     timer.run();
 }
 
-void setVirtualPin(int pin, int value)
-{
-    Blynk.virtualWrite(pin, value);
-}
-
 float humidity;
 float temperature;
-double aT; // apparent temperature
+double aT , tempH ,tempT; // apparent temperature
 void getRoomTemp()
 {
-    double tempH = dht.readHumidity();
-    double tempT = dht.readTemperature();
+    tempH = dht.readHumidity();
+    tempT = dht.readTemperature();
     if (!isnan(tempH) && !isnan(tempT))
     {
-
         humidity = tempH;
         temperature = tempT;
         aT = 1.1 * temperature + 0.0261 * humidity - 3.944; // apparent (perceived) temperature. simple formula taken from online;
@@ -97,19 +95,19 @@ long pingCooldown = PING_BEFORE_TENANTS;
 long lastTenantPing = -pingCooldown;
 void call_ping()
 {
-    if (millis() - lastTenantPing >= pingCooldown)
-    {
-        tenantHandler.pingNextTenant();
-        if (tenantHandler.allTenantsPinged())
-        {
-            // switch to another state only after finished pinging all tenants
-            pingCooldown = PING_BEFORE_TENANTS;
-            lastTenantPing = millis();
-        }
-    }
-    else
+    if (!(millis() - lastTenantPing >= pingCooldown))
     {
         switchToState(pState::CONTROL_CLIMATE);
+        return;
+    }
+
+    tenantHandler.pingNextTenant();
+    if (tenantHandler.allTenantsPinged())
+    {
+        // switch to another state only after finished pinging all tenants
+        pingCooldown = PING_BEFORE_TENANTS;
+        lastTenantPing = millis();
+        setVirtualPin(V4, tenantHandler.getHomeTenantsCount()); // update the number of tenants home in blynk
     }
 }
 
@@ -138,6 +136,8 @@ void call_controlClimate()
     switchToState(pState::CONTROL_PLANTS);
 }
 
+int plantMoisture;
+unsigned long lastUpdateData = 0;
 void call_plantControl()
 {
     // control the plants
@@ -146,11 +146,20 @@ void call_plantControl()
     if (plant.needsWatering() || manualWaterOverride)
     {
         PDEBUG_PRINTLN("Watering plant");
-        manualWaterOverride = false;
         plant.startWatering();
+        setVirtualPin(PLNT_DATA_VPIN, 1);
+        manualWaterOverride = false;
     }
+
     if (!plant.isWatering())
     {
+        if (millis() - lastUpdateData > UPDATE_INTERVAL_PLANT_DATA)
+        {
+            plantMoisture = map(plant.getMoistureValue(), 0, 4095, 0, 100);
+            setVirtualPin(PLNT_DATA_VPIN, plantMoisture);
+            setVirtualPin(PLNT_VPIN, 0);
+            lastUpdateData = millis();
+        }
         switchToState(pState::DETECT_CLIMATE);
     }
 }
@@ -175,6 +184,11 @@ void switchToState(pState newState)
         currentTimerID = timer.setInterval(CP_INTERVAL, call_plantControl);
         break;
     }
+}
+
+void setVirtualPin(int pin, int value)
+{
+    Blynk.virtualWrite(pin, value);
 }
 
 // POWER STATE (on/off)

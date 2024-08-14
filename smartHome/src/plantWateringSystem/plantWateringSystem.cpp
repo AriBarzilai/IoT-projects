@@ -67,3 +67,8 @@ bool plantWateringSystem::isWatering()
 {
     return isWateringFlag;
 }
+
+int plantWateringSystem::getMoistureValue()
+{
+    return soilMoistureValue;
+}

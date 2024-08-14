@@ -65,6 +65,12 @@ public:
      */
     bool isWatering();
 
+    /**
+     * @brief get the moisture value of the soil moisture value.
+     * @return The moisture value of the soil moisture sensor.
+     */
+    int getMoistureValue();
+
 private:
     int servoPin;             ///< The pin number connected to the servo motor.
     int soilSensorPin;        ///< The pin number connected to the soil moisture sensor.
