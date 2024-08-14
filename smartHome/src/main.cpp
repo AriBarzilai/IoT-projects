@@ -147,7 +147,7 @@ void call_plantControl()
     {
         PDEBUG_PRINTLN("Watering plant");
         plant.startWatering();
-        setVirtualPin(PLNT_DATA_VPIN, 1);
+        setVirtualPin(PLNT_VPIN , 1);
         manualWaterOverride = false;
     }
 
