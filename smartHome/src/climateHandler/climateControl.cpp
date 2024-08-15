@@ -62,11 +62,11 @@ void ClimateControl::handleClimate()
     {
         if (airConditioner.getTemperatureMode() == TemperatureMode::COLD)
         {
-            onHeatMode();
+            onColdMode();
         }
         else
         {
-            onColdMode();
+            onHeatMode();
         }
     }
     else
